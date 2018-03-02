@@ -1,9 +1,3 @@
-import com.google.common.collect.ImmutableMap
-import jobs.misc.AnalysisQuartzJobAdapter
-import org.springframework.beans.factory.config.CustomScopeConfigurer
-import org.springframework.stereotype.Component
-import org.transmartproject.core.users.User
-
 /*************************************************************************
 * Copyright 2008-2012 Janssen Research & Development, LLC.
 *
@@ -20,91 +14,58 @@ import org.transmartproject.core.users.User
 * limitations under the License.
 ******************************************************************/
 
+import com.google.common.collect.ImmutableMap
+import jobs.misc.AnalysisQuartzJobAdapter
+import org.springframework.beans.factory.config.CustomScopeConfigurer
+import org.springframework.stereotype.Component
+import org.transmartproject.core.users.User
+
 class RdcRmodulesGrailsPlugin {
-    // the plugin version
-    def version = "16.2-SNAPSHOT"
-    // the version or versions of Grails the plugin is designed for
-    def grailsVersion = "2.2.4 > *"
-    // the other plugins this plugin depends on
-    def dependsOn = [:]
-    // resources that are excluded from plugin packaging
-    def pluginExcludes = [
-            "grails-app/views/error.gsp"
-    ]
+	def version = '18.1-SNAPSHOT'
+	def grailsVersion = '2.3 > *'
+	def title = 'R Modules Plugin'
+	def author = 'Sai Kumar Munikuntla'
+	def authorEmail = 'smunikuntla@recomdata.com'
+	def description = 'TODO'
+	def documentation = 'TODO'
+	def license = 'GPL3'
+	def issueManagement = [system: 'TODO', url: 'TODO']
+	def scm = [url: 'https://github.com/transmart/Rmodules']
 
-    // TODO Fill in these fields
-    def author = "Sai Kumar Munikuntla"
-    def authorEmail = "smunikuntla@recomdata.com"
-    def title = "R Modules Plugin"
-    def description = '''\\
-Brief description of the plugin.
-'''
+	def doWithSpring = {
+		xmlns context: 'http://www.springframework.org/schema/context'
 
-    // URL to the plugin's documentation
-    def documentation = "http://grails.org/plugin/rmodules"
+		context.'component-scan'('base-package': 'jobs') {
+			context.'include-filter'(type: 'annotation', expression: Component.canonicalName)
+		}
 
-    def doWithWebDescriptor = { xml ->
-        // TODO Implement additions to web.xml (optional), this event occurs before
-    }
+		jobScopeConfigurer(CustomScopeConfigurer) {
+			scopes = ImmutableMap.of('job', ref('jobSpringScope'))
+		}
 
-    def doWithSpring = {
-        xmlns context: 'http://www.springframework.org/schema/context'
+		// these beans are actually created manually and put in the storage for the job scope
+		jobName(String) { bean ->
+			bean.scope = 'job'
+		}
+		"$AnalysisQuartzJobAdapter.BEAN_USER_IN_CONTEXT"(User) { bean ->
+			bean.scope = 'job'
+		}
 
-        context.'component-scan'('base-package': 'jobs') {
-            context.'include-filter'(
-                    type:       'annotation',
-                    expression: Component.canonicalName)
-        }
+		// Prevent the resource plugin from handling the resources in this so that it can be served directly
+		def adhoc = application.config.grails.resources.adhoc
+		adhoc.excludes = ['/analysisFiles/**', '/images/analysisFiles/**'] + (adhoc.excludes ?: [])
+	}
 
-        jobScopeConfigurer(CustomScopeConfigurer) {
-            scopes = ImmutableMap.of('job', ref('jobSpringScope'))
-        }
+	def doWithApplicationContext = { applicationContext ->
+		// currentUserBean is a tranSMART bean
+		def currentUserBean = applicationContext.getBean('&currentUserBean')
+		if (!currentUserBean) {
+			throw new IllegalStateException(
+				"The context doesn't provide the bean currentUserBean. " +
+				"Most likely, you're using an incompatible transmartApp")
+		}
 
-        /* these beans are actually created manually and put
-         * in the storage for the job scope */
-        jobName(String) { bean ->
-            bean.scope = 'job'
-        }
-        "${AnalysisQuartzJobAdapter.BEAN_USER_IN_CONTEXT}"(User) { bean ->
-            bean.scope = 'job'
-        }
-
-        /*
-         * Prevent the resource plugin from handling the resources in this
-         * so that it can be served directly.
-         */
-        def curExcludes = application.config.grails.resources.adhoc.excludes
-        application.config.grails.resources.adhoc.excludes =
-                ['/analysisFiles/**', '/images/analysisFiles/**'] +
-                        (curExcludes ?: [])
-    }
-
-    def doWithDynamicMethods = { ctx ->
-        // TODO Implement registering dynamic methods to classes (optional)
-    }
-
-    def doWithApplicationContext = { applicationContext ->
-        // currentUserBean is a tranSMART bean
-        def currentUserBean = applicationContext.getBean('&currentUserBean')
-        if (!currentUserBean) {
-            throw new IllegalStateException("The context doesn't provide the " +
-                    "bean currentUserBean. Most likely, you're using an " +
-                    "incompatible transmartApp")
-        }
-
-        // allow currentUserBean to be able to find the current user inside
-        // the jobs (quartz) threads
-        currentUserBean.registerBeanToTry(AnalysisQuartzJobAdapter.BEAN_USER_IN_CONTEXT)
-    }
-
-    def onChange = { event ->
-        // TODO Implement code that is executed when any artefact that this plugin is
-        // watching is modified and reloaded. The event contains: event.source,
-        // event.application, event.manager, event.ctx, and event.plugin.
-    }
-
-    def onConfigChange = { event ->
-        // TODO Implement code that is executed when the project configuration changes.
-        // The event is the same as for 'onChange'.
-    }
+		// allow currentUserBean to be able to find the current user inside the jobs (quartz) threads
+		currentUserBean.registerBeanToTry(AnalysisQuartzJobAdapter.BEAN_USER_IN_CONTEXT)
+	}
 }
