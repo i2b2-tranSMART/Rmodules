@@ -18,49 +18,42 @@
 <html>
 <head>
 <title>subsetPanel.html</title>
-
 <meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
 <meta http-equiv="description" content="this is my page">
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
-<link rel="stylesheet" type="text/css"
-	href="${resource(dir:'css', file:'datasetExplorer.css')}">
-
+<link rel="stylesheet" type="text/css" href="${resource(dir: 'css', file: 'datasetExplorer.css')}">
 </head>
-
 <body>
-	<form>
-		<br />
-		<br />	
-		<span class='AnalysisHeader'>Survival Curve</span><br /><br />
-		
-		<g:each var="location" in="${imageLocation}">
-			<g:img file="${location}"></g:img>
-		</g:each>
-	
-		<br />
-		<br />	
-		${legendText}	
-	
-		<br />
-		<br />
-		<span class='AnalysisHeader'>Cox Regression Result</span><br /><br />
-		
-		${coxData}
-		
-		<br />
-		<br />		
-		<span class='AnalysisHeader'>Survival Curve Fitting Summary</span><br /><br />
-		
-		${survivalData}
+<form>
+	<br/>
+	<br/>
+	<span class='AnalysisHeader'>Survival Curve</span><br/><br/>
 
-		
-		
-		<br />
-		<br />
-		<g:if test="${zipLink}">
-			<a class='AnalysisLink' class='downloadLink' href="${resource(file: zipLink)}">Download raw R data</a>
-		</g:if>
-	</form>
+	<g:each var='location' in="${imageLocation}">
+	<g:img file="${location}"/>
+	</g:each>
+
+	<br/>
+	<br/>
+	${legendText}
+
+	<br/>
+	<br/>
+	<span class='AnalysisHeader'>Cox Regression Result</span><br/><br/>
+
+	${coxData}
+
+	<br/>
+	<br/>
+	<span class='AnalysisHeader'>Survival Curve Fitting Summary</span><br/><br/>
+
+	${survivalData}
+
+	<br/>
+	<br/>
+	<g:if test="${zipLink}">
+	<a class='AnalysisLink' class='downloadLink' href="${resource(file: zipLink)}">Download raw R data</a>
+	</g:if>
+</form>
 </body>
-
 </html>

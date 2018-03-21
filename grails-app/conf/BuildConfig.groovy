@@ -19,6 +19,9 @@ def forkSettingsOther = [minMemory:  256, maxMemory: 1024, maxPerm: 384, debug: 
 grails.project.fork = [test: [ *:forkSettingsOther, daemon: true ], console: forkSettingsOther]
 grails.project.work.dir = 'target'
 
+grails.project.target.level = 1.7
+grails.project.source.level = 1.7
+
 grails.project.dependency.resolver = 'maven'
 grails.project.dependency.resolution = {
 	inherits 'global'
@@ -52,6 +55,7 @@ grails.project.dependency.resolution = {
 		compile ':codenarc:0.21'
 		compile ':quartz:1.0-RC2'
 		compile ':sendfile:0.2'
+		compile ':spring-security-core:2.0.0'
 
 		build ':release:3.1.2', ':rest-client-builder:2.1.1', {
 			export = false

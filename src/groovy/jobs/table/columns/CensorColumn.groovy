@@ -12,33 +12,34 @@ import org.transmartproject.core.dataquery.clinical.PatientRow
 @CompileStatic
 class CensorColumn extends AbstractColumn {
 
-    public static def CENSORING_TRUE = '1'
-    public static def CENSORING_FALSE = '0'
+	public static final String CENSORING_TRUE = '1'
+	public static final String CENSORING_FALSE = '0'
 
-    Set<ClinicalVariableColumn> leafNodes
+	Set<ClinicalVariableColumn> leafNodes
 
-    PatientRow lastRow
+	PatientRow lastRow
 
-    @Override
-    void onReadRow(String dataSourceName, Object row) {
-        lastRow = (PatientRow) row
-    }
+	@Override
+	void onReadRow(String dataSourceName, row) {
+		lastRow = (PatientRow) row
+	}
 
-    @Override
-    Map<String, Object> consumeResultingTableRows() {
-        if (!lastRow) return ImmutableMap.of()
+	@Override
+	Map<String, Object> consumeResultingTableRows() {
+		if (!lastRow) {
+			return ImmutableMap.of()
+		}
 
-        for (clinicalVariable in leafNodes) {
-            if (lastRow.getAt(clinicalVariable)) {
-                return ImmutableMap.of(getPrimaryKey(lastRow),
-                        CENSORING_TRUE)
-            }
-        }
+		for (clinicalVariable in leafNodes) {
+			if (lastRow.getAt(clinicalVariable)) {
+				return ImmutableMap.of(getPrimaryKey(lastRow), CENSORING_TRUE) as Map
+			}
+		}
 
-        ImmutableMap.of(getPrimaryKey(lastRow), CENSORING_FALSE)
-    }
+		ImmutableMap.of(getPrimaryKey(lastRow), CENSORING_FALSE) as Map
+	}
 
-    protected String getPrimaryKey(PatientRow row) {
-        row.patient.inTrialId
-    }
+	protected String getPrimaryKey(PatientRow row) {
+		row.patient.inTrialId
+	}
 }

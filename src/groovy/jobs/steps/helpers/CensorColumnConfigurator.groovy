@@ -12,45 +12,38 @@ import org.transmartproject.core.dataquery.clinical.ClinicalVariable
 @Scope('prototype')
 class CensorColumnConfigurator extends ColumnConfigurator {
 
-    String keyForConceptPaths
+	String keyForConceptPaths
 
-    @Autowired
-    private ClinicalDataRetriever clinicalDataRetriever
+	@Autowired
+	private ClinicalDataRetriever clinicalDataRetriever
 
-    @Override
-    protected void doAddColumn(Closure<Column> decorateColumn) {
+	@Override
+	protected void doAddColumn(Closure<Column> decorateColumn) {
 
-        String conceptPaths = getConceptPaths()
+		String conceptPaths = getConceptPaths()
 
-        if (conceptPaths != '') {
-            Set<ClinicalVariable> variables =
-                    conceptPaths.split(/\|/).collect {
-                        clinicalDataRetriever.createVariableFromConceptPath it.trim()
-                    }
+		if (conceptPaths) {
+			Set<ClinicalVariable> variables = conceptPaths.split(/\|/).collect { String s ->
+				clinicalDataRetriever.createVariableFromConceptPath s.trim()
+			}
 
-            variables = variables.collect {
-                clinicalDataRetriever << it
-            }
+			variables = variables.collect { clinicalDataRetriever << it }
 
-            clinicalDataRetriever.attachToTable table
+			clinicalDataRetriever.attachToTable table
 
-            table.addColumn(
-                    decorateColumn.call(
-                            new CensorColumn(
-                                    header: header,
-                                    leafNodes: variables)),
-                    [ClinicalDataRetriever.DATA_SOURCE_NAME] as Set)
-        } else {
-            // if no concepts are specified, all rows result in CENSORING_FALSE
-            table.addColumn(new ConstantValueColumn(
-                            header: header,
-                            value: CensorColumn.CENSORING_FALSE),
-                    Collections.emptySet())
-        }
-    }
+			table.addColumn(decorateColumn(
+					new CensorColumn(header: header, leafNodes: variables)),
+					[ClinicalDataRetriever.DATA_SOURCE_NAME] as Set)
+		}
+		else {
+			// if no concepts are specified, all rows result in CENSORING_FALSE
+			table.addColumn(new ConstantValueColumn(header: header, value: CensorColumn.CENSORING_FALSE),
+					Collections.emptySet())
+		}
+	}
 
-    String getConceptPaths() {
-        // empty conceptPaths are allowed (required=false)
-        getStringParam(keyForConceptPaths, false)
-    }
+	String getConceptPaths() {
+		// empty conceptPaths are allowed (required=false)
+		getStringParam keyForConceptPaths, false
+	}
 }

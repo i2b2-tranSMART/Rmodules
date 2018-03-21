@@ -1,27 +1,27 @@
 package jobs.steps
 
+import groovy.transform.CompileStatic
+
+@CompileStatic
 class WriteFileStep implements Step {
 
-    File temporaryDirectory
-    String fileName
-    String fileContent
+	File temporaryDirectory
+	String fileName
+	String fileContent
 
-    @Override
-    String getStatusName() {
-        if (sufficientInformationProvided) {
-            "Writing ${fileName} file"
-        }
-    }
+	String getStatusName() {
+		if (sufficientInformationProvided) {
+			'Writing ' + fileName + ' file'
+		}
+	}
 
-    @Override
-    void execute() {
-        if (sufficientInformationProvided) {
-            new File(temporaryDirectory, fileName).text = fileContent
-        }
-    }
+	void execute() {
+		if (sufficientInformationProvided) {
+			new File(temporaryDirectory, fileName).text = fileContent
+		}
+	}
 
-    private boolean isSufficientInformationProvided() {
-        temporaryDirectory && fileName && fileContent
-    }
-
+	private boolean isSufficientInformationProvided() {
+		temporaryDirectory && fileName && fileContent
+	}
 }

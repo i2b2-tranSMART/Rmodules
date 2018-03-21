@@ -1,7 +1,14 @@
 package jobs
 
 import com.recomdata.transmart.util.ZipService
-import jobs.steps.*
+import jobs.steps.AcghRegionDumpDataStep
+import jobs.steps.BuildTableResultStep
+import jobs.steps.MultiRowAsGroupDumpTableResultsStep
+import jobs.steps.OpenHighDimensionalDataStep
+import jobs.steps.RCommandsStep
+import jobs.steps.Step
+import jobs.steps.WriteFileStep
+import jobs.steps.ZipResultsStep
 import jobs.steps.helpers.CensorColumnConfigurator
 import jobs.steps.helpers.NumericColumnConfigurator
 import jobs.steps.helpers.SimpleAddColumnConfigurator
@@ -21,120 +28,118 @@ import static jobs.steps.AbstractDumpStep.DEFAULT_OUTPUT_FILE_NAME
 @Scope('job')
 class AcghSurvivalAnalysis extends AbstractAnalysisJob implements InitializingBean {
 
-    @Autowired
-    HighDimensionResource highDimensionResource
+	@Autowired
+	HighDimensionResource highDimensionResource
 
-    @Autowired
-    SimpleAddColumnConfigurator primaryKeyColumnConfigurator
+	@Autowired
+	SimpleAddColumnConfigurator primaryKeyColumnConfigurator
 
-    @Autowired
-    NumericColumnConfigurator timeVariableConfigurator
+	@Autowired
+	NumericColumnConfigurator timeVariableConfigurator
 
-    @Autowired
-    CensorColumnConfigurator censoringConfigurator
+	@Autowired
+	CensorColumnConfigurator censoringConfigurator
 
-    @Autowired
-    MessageSource messageSource
+	@Autowired
+	MessageSource messageSource
 
-    @Autowired
-    Table table
+	@Autowired
+	Table table
 
-    @Autowired
-    GrailsApplication grailsApplication
+	@Autowired
+	GrailsApplication grailsApplication
 
-    @Autowired
-    ZipService zipService
+	@Autowired
+	ZipService zipService
 
-    @Override
-    void afterPropertiesSet() throws Exception {
-        primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
+	void afterPropertiesSet() {
+		primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
 
-        configureTimeVariableConfigurator()
-        configureCensoringVariableConfigurator()
-    }
+		configureTimeVariableConfigurator()
+		configureCensoringVariableConfigurator()
+	}
 
-    void configureTimeVariableConfigurator() {
-        timeVariableConfigurator.header = 'TIME'
-        timeVariableConfigurator.setKeys('time')
-        timeVariableConfigurator.alwaysClinical = true
-    }
+	void configureTimeVariableConfigurator() {
+		timeVariableConfigurator.header = 'TIME'
+		timeVariableConfigurator.setKeys('time')
+		timeVariableConfigurator.alwaysClinical = true
+	}
 
-    void configureCensoringVariableConfigurator() {
-        censoringConfigurator.header             = 'CENSOR'
-        censoringConfigurator.keyForConceptPaths = 'censoringVariable'
-    }
+	void configureCensoringVariableConfigurator() {
+		censoringConfigurator.header = 'CENSOR'
+		censoringConfigurator.keyForConceptPaths = 'censoringVariable'
+	}
 
-    protected List<Step> prepareSteps() {
-        List<Step> steps = []
+	protected List<Step> prepareSteps() {
+		List<Step> steps = []
 
-        steps << new WriteFileStep(
-                temporaryDirectory: temporaryDirectory,
-                fileName: 'README.txt',
-                fileContent: messageSource.getMessage("jobs.SurvivalAnalysis.readmeFileContent", null, null, null))
+		steps << new WriteFileStep(
+				temporaryDirectory: temporaryDirectory,
+				fileName: 'README.txt',
+				fileContent: messageSource.getMessage("jobs.SurvivalAnalysis.readmeFileContent", null, null, null))
 
-        steps << new BuildTableResultStep(
-                table:         table,
-                configurators: [primaryKeyColumnConfigurator,
-                        timeVariableConfigurator,
-                        censoringConfigurator,
-                ])
+		steps << new BuildTableResultStep(
+				table: table,
+				configurators: [primaryKeyColumnConfigurator,
+				                timeVariableConfigurator,
+				                censoringConfigurator,
+				])
 
-        steps << new MultiRowAsGroupDumpTableResultsStep(
-                table: table,
-                temporaryDirectory: temporaryDirectory,
-                outputFileName: 'phenodata.tsv')
+		steps << new MultiRowAsGroupDumpTableResultsStep(
+				table: table,
+				temporaryDirectory: temporaryDirectory,
+				outputFileName: 'phenodata.tsv')
 
-        def openResultSetStep = new OpenHighDimensionalDataStep(
-                params: params,
-                dataTypeResource: highDimensionResource.getSubResourceForType(analysisConstraints['data_type']),
-                analysisConstraints: analysisConstraints)
+		def openResultSetStep = new OpenHighDimensionalDataStep(
+				params: params,
+				dataTypeResource: highDimensionResource.getSubResourceForType(analysisConstraints['data_type']),
+				analysisConstraints: analysisConstraints)
 
-        steps << openResultSetStep
+		steps << openResultSetStep
 
-        steps << createDumpHighDimensionDataStep { -> openResultSetStep.results }
+		steps << createDumpHighDimensionDataStep { -> openResultSetStep.results }
 
-        steps << new RCommandsStep(
-                temporaryDirectory: temporaryDirectory,
-                scriptsDirectory: scriptsDirectory,
-                rStatements: RStatements,
-                studyName: studyName,
-                params: params,
-                extraParams: [inputFileName: DEFAULT_OUTPUT_FILE_NAME])
+		steps << new RCommandsStep(
+				temporaryDirectory: temporaryDirectory,
+				scriptsDirectory: scriptsDirectory,
+				rStatements: RStatements,
+				studyName: studyName,
+				params: params,
+				extraParams: [inputFileName: DEFAULT_OUTPUT_FILE_NAME])
 
-        steps << new ZipResultsStep(jobName: params.jobName,
-                grailsApplication: grailsApplication,
-                zipService: zipService)
+		steps << new ZipResultsStep(jobName: params.jobName,
+				grailsApplication: grailsApplication,
+				zipService: zipService)
 
-        steps
-    }
+		steps
+	}
 
-    @Override
-    protected Step createDumpHighDimensionDataStep(Closure resultsHolder) {
-        new AcghRegionDumpDataStep(
-                temporaryDirectory: temporaryDirectory,
-                resultsHolder: resultsHolder,
-                params: params)
-    }
+	@Override
+	protected Step createDumpHighDimensionDataStep(Closure resultsHolder) {
+		new AcghRegionDumpDataStep(
+				temporaryDirectory: temporaryDirectory,
+				resultsHolder: resultsHolder,
+				params: params)
+	}
 
-    @Override
-    protected List<String> getRStatements() {
-        [
-                '''source('$pluginDirectory/aCGH/acgh-survival-test.R')''',
-                '''acgh.survival.test(survival               = 'TIME',
+	@Override
+	protected List<String> getRStatements() {
+		[
+				'''source('$pluginDirectory/aCGH/acgh-survival-test.R')''',
+				'''acgh.survival.test(survival               = 'TIME',
                                       censor                 = 'CENSOR',
                                       number.of.permutations = $numberOfPermutations,
                                       test.aberrations       = '$aberrationType')''',
-                '''source('$pluginDirectory/aCGH/acgh-plot-survival.R')''',
-                '''acgh.plot.survival(survival             = 'TIME',
+				'''source('$pluginDirectory/aCGH/acgh-plot-survival.R')''',
+				'''acgh.plot.survival(survival             = 'TIME',
                                       censor               = 'CENSOR',
                                       aberrations          = '$aberrationType',
                                       confidence.intervals = '$confidenceIntervals')'''
-        ]
-    }
+		]
+	}
 
-    @Override
-    protected getForwardPath() {
-        return "/aCGHSurvivalAnalysis/aCGHSurvivalAnalysisOutput?jobName=${name}"
-    }
-
+	@Override
+	protected String getForwardPath() {
+		"/aCGHSurvivalAnalysis/aCGHSurvivalAnalysisOutput?jobName=${name}"
+	}
 }

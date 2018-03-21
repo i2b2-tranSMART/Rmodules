@@ -1,6 +1,6 @@
 package jobs.steps.helpers
 
-import groovy.util.logging.Log4j
+import groovy.util.logging.Slf4j
 import jobs.table.Column
 import jobs.table.columns.ConstantValueColumn
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,120 +21,114 @@ import org.transmartproject.core.exceptions.InvalidArgumentsException
  *
  * Does not support multiple numeric variables.
  */
-@Log4j
 @Component
 @Scope('prototype')
 @Qualifier('general')
+@Slf4j('logger')
 class OptionalBinningColumnConfigurator extends ColumnConfigurator {
 
-    @Autowired
-    BinningColumnConfigurator binningConfigurator
+	@Autowired
+	BinningColumnConfigurator binningConfigurator
 
-    String projection
+	String projection
 
-    String keyForConceptPaths,
-           keyForDataType,        /* CLINICAL for clinical data */
-           keyForSearchKeywordId, /* only applicable for high dim data */
-           keyForIsCategorical    /* optional; see isCategorical() */
+	String keyForConceptPaths,
+	       keyForDataType,        /* CLINICAL for clinical data */
+	       keyForSearchKeywordId, /* only applicable for high dim data */
+	       keyForIsCategorical    /* optional; see isCategorical() */
 
-    boolean multiRow = false
+	boolean multiRow = false
 
-    /* if numeric variables must be binned */
-    boolean forceNumericBinning = true
+	/* if numeric variables must be binned */
+	boolean forceNumericBinning = true
 
-    protected Class<? extends ColumnConfigurator> numericColumnConfigurationClass =
-            NumericColumnConfigurator
+	protected Class<? extends ColumnConfigurator> numericColumnConfigurationClass = NumericColumnConfigurator
 
-    private ColumnConfigurator innerConfigurator
+	private ColumnConfigurator innerConfigurator
 
-    @Autowired
-    ApplicationContext appCtx
+	@Autowired
+	ApplicationContext appCtx
 
-    private void setupInnerConfigurator(String conceptPaths) {
+	private void setupInnerConfigurator(String conceptPaths) {
 
-        boolean emptyConcept = (conceptPaths == '')
+		boolean emptyConcept = !conceptPaths
+		if (emptyConcept) {
+			//when required we will never reach here
+			logger.debug 'Not required and no value for {}, assuming constant value column', keyForConceptPaths
 
-        if (emptyConcept) {
-            //when required we will never reach here
-            log.debug("Not required and no value for $keyForConceptPaths, " +
-                    "assuming constant value column")
+			innerConfigurator = appCtx.getBean SimpleAddColumnConfigurator
+			innerConfigurator.column = new ConstantValueColumn(
+					header: getHeader(),
+					missingValueAction: missingValueAction)
+			innerConfigurator.addColumn()
 
-            innerConfigurator = appCtx.getBean SimpleAddColumnConfigurator
-            innerConfigurator.column = new ConstantValueColumn(
-                    header:             getHeader(),
-                    missingValueAction: missingValueAction)
-            innerConfigurator.addColumn()
+		}
+		else if (categorical) {
+			logger.debug 'Found pipe character in {}, assuming categorical data', keyForConceptPaths
 
-        } else if (categorical) {
-            log.debug("Found pipe character in $keyForConceptPaths, " +
-                    "assuming categorical data")
+			innerConfigurator = appCtx.getBean CategoricalColumnConfigurator
 
-            innerConfigurator = appCtx.getBean CategoricalColumnConfigurator
+			innerConfigurator.header = getHeader()
+			innerConfigurator.keyForConceptPaths = keyForConceptPaths
+		}
+		else {
+			logger.debug 'Did not find pipe character in {}, assuming continuous data', keyForConceptPaths
 
-            innerConfigurator.header             = getHeader()
-            innerConfigurator.keyForConceptPaths = keyForConceptPaths
-        } else {
-            log.debug("Did not find pipe character in $keyForConceptPaths, " +
-                    "assuming continuous data")
+			innerConfigurator = appCtx.getBean numericColumnConfigurationClass
 
-            innerConfigurator = appCtx.getBean numericColumnConfigurationClass
+			innerConfigurator.header = getHeader()
+			innerConfigurator.projection = projection
+			innerConfigurator.keyForConceptPath = keyForConceptPaths
+			innerConfigurator.keyForDataType = keyForDataType
+			innerConfigurator.keyForSearchKeywordId = keyForSearchKeywordId
+			innerConfigurator.multiRow = multiRow
+		}
 
-            innerConfigurator.header                = getHeader()
-            innerConfigurator.projection            = projection
-            innerConfigurator.keyForConceptPath     = keyForConceptPaths
-            innerConfigurator.keyForDataType        = keyForDataType
-            innerConfigurator.keyForSearchKeywordId = keyForSearchKeywordId
-            innerConfigurator.multiRow              = multiRow
-        }
+		binningConfigurator.innerConfigurator = innerConfigurator
+	}
 
-        binningConfigurator.innerConfigurator = innerConfigurator
-    }
+	@Override
+	protected void doAddColumn(Closure<Column> decorateColumn) {
 
+		String conceptPaths = getConceptPaths()
+		setupInnerConfigurator conceptPaths
 
-    @Override
-    protected void doAddColumn(Closure<Column> decorateColumn) {
+		if (conceptPaths) {
+			if (!binningConfigurator.binningEnabled &&
+					!(innerConfigurator instanceof CategoricalColumnConfigurator) &&
+					forceNumericBinning) {
+				throw new InvalidArgumentsException("Numeric variables must be binned for column " + header)
+			}
 
-        def conceptPaths = getConceptPaths()
-        setupInnerConfigurator(conceptPaths)
+			//configure binning only if has variable
+			binningConfigurator.addColumn decorateColumn
+		}
+	}
 
-        if (conceptPaths != '') {
+	boolean isCategorical() {
+		keyForIsCategorical ?
+				getStringParam(keyForIsCategorical).equalsIgnoreCase('true') :
+				isMultiVariable()
+	}
 
-            if (!binningConfigurator.binningEnabled &&
-                    !(innerConfigurator instanceof CategoricalColumnConfigurator) &&
-                    forceNumericBinning) {
-                throw new InvalidArgumentsException("Numeric variables must be " +
-                        "binned for column ${getHeader()}")
-            }
-            
-            //configure binning only if has variable
-            binningConfigurator.addColumn decorateColumn
-        }
-    }
+	protected boolean isMultiVariable() {
+		getStringParam(keyForConceptPaths).contains '|'
+	}
 
-    boolean isCategorical() {
-        keyForIsCategorical ? getStringParam(keyForIsCategorical).equalsIgnoreCase('true')
-                            : isMultiVariable()
-    }
+	boolean isCategoricalOrBinned() {
+		isCategorical() || binningConfigurator.binningEnabled
+	}
+	/**
+	 * Sets parameter keys based on optional base key part
+	 */
+	void setKeys(String keyPart = '') {
+		keyForConceptPaths = "${keyPart}Variable"
+		keyForDataType = "div${keyPart.capitalize()}VariableType"
+		keyForSearchKeywordId = "div${keyPart.capitalize()}VariablePathway"
+	}
 
-    protected boolean isMultiVariable() {
-        getStringParam(keyForConceptPaths).contains('|')
-    }
-
-    boolean isCategoricalOrBinned() {
-        isCategorical() || binningConfigurator.binningEnabled
-    }
-    /**
-     * Sets parameter keys based on optional base key part
-     * @param keyPart
-     */
-    void setKeys(String keyPart = '') {
-        keyForConceptPaths    = "${keyPart}Variable"
-        keyForDataType        = "div${keyPart.capitalize()}VariableType"
-        keyForSearchKeywordId = "div${keyPart.capitalize()}VariablePathway"
-    }
-
-    String getConceptPaths() {
-        //if required this will fail on empty conceptPaths
-        getStringParam(keyForConceptPaths, required)
-    }    
+	String getConceptPaths() {
+		//if required this will fail on empty conceptPaths
+		getStringParam keyForConceptPaths, required
+	}
 }

@@ -1,6 +1,6 @@
 %{--include js lib for heatmap dynamically--}%
-<r:require modules="acgh_survival_analysis"/>
-<r:layoutResources disposition="defer"/>
+<r:require modules='acgh_survival_analysis'/>
+<r:layoutResources disposition='defer'/>
 
 %{--Survival Analysis aCGH input Container--}%
 <div id="analysisContainer"></div>
@@ -21,12 +21,12 @@
 
 		<div id="plotBody" class="plotBody">
 			<div id="plotCurve">
-				<g:img file="{filename}"  class="survivalPlotImg"></g:img>
+				<g:img file="{filename}" class='survivalPlotImg'/>
 			</div>
 
 			<div id="plotCurveDesc">
 				<table class="newspaper-a">
-					<caption>Table 1: Input Parameters </caption>
+					<caption>Table 1: Input Parameters</caption>
 					<thead>
 					<tr>
 						<th scope="col" class="first-col">Parameters</th>
@@ -35,28 +35,28 @@
 					</thead>
 
 					<tbody>
-                    <tr>
-                        <td class="first-col">Job Name</td>
-                        <td>{jobName}</td>
-                    </tr>
-                    <tr>
-                        <td class="first-col">Started date</td>
-                        <td>{startDate}</td>
-                    </tr>
-                    <tr>
-                        <td class="first-col">Run Time</td>
-                        <td>{runTime}</td>
-                    </tr>
-                    <tr>
+					<tr>
+						<td class="first-col">Job Name</td>
+						<td>{jobName}</td>
+					</tr>
+					<tr>
+						<td class="first-col">Started date</td>
+						<td>{startDate}</td>
+					</tr>
+					<tr>
+						<td class="first-col">Run Time</td>
+						<td>{runTime}</td>
+					</tr>
+					<tr>
 						<td class="first-col">Selected Cohort</td>
 						<td>
-                            <div> Subset 1: {inputCohort1} </div>
-                            <div> Subset 2: {inputCohort2} </div>
-                        </td>
-				    </tr>
+							<div>Subset 1: {inputCohort1}</div>
+							<div>Subset 2: {inputCohort2}</div>
+						</td>
+					</tr>
 					<tr>
 						<td class="first-col">Region</td>
-                        <td>{inputRegion}</td>
+						<td>{inputRegion}</td>
 					</tr>
 					<tr>
 						<td class="first-col">Survival Time</td>

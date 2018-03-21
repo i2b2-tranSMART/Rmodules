@@ -1,64 +1,67 @@
 package com.recomdata.transmart.data.association
 
+import com.recomdata.transmart.util.ZipService
 import grails.test.mixin.TestFor
 import org.junit.Before
 import org.junit.Test
-import org.gmock.WithGMock
 
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.*
-
+import static org.hamcrest.Matchers.contains
+import static org.hamcrest.Matchers.equalTo
 
 @TestFor(RModulesOutputRenderService)
-@WithGMock
 class RModulesOutputRenderServiceTests {
 
-    private static final String USER_NAME = 'user'
-    private static final String FILE_CONTENTS = 'file contents\n'
-    private static final String ANALYSIS_NAME = "$USER_NAME-Analysis-100"
-    private static final String WORKING_DIRECTORY = 'workingDirectory'
+	private static final String USER_NAME = 'user'
+	private static final String FILE_CONTENTS = 'file contents\n'
+	private static final String ANALYSIS_NAME = "$USER_NAME-Analysis-100"
+	private static final String WORKING_DIRECTORY = 'workingDirectory'
 
-    File temporaryDirectory
-    File analysisDirectory
-    File workingDirectory
+	File temporaryDirectory
+	File analysisDirectory
+	File workingDirectory
 
-    @Before
-    void before() {
-        temporaryDirectory = File.createTempDir('analysis_file_test', '')
-        grailsApplication.config.RModules.tempFolderDirectory = temporaryDirectory.absolutePath
+	@Before
+	void before() {
+		temporaryDirectory = File.createTempDir('analysis_file_test', '')
+		grailsApplication.config.RModules.tempFolderDirectory = service.tempFolderDirectory =
+				temporaryDirectory.absolutePath + '/'
 
-        analysisDirectory = new File(temporaryDirectory, ANALYSIS_NAME)
-        analysisDirectory.mkdir()
-        workingDirectory = new File(analysisDirectory, WORKING_DIRECTORY)
-        workingDirectory.mkdir()
+		analysisDirectory = new File(temporaryDirectory, ANALYSIS_NAME)
+		assert analysisDirectory.mkdirs()
+		analysisDirectory.deleteOnExit()
 
-        service.zipService = mock()
-        service.asyncJobService = mock()
+		workingDirectory = new File(analysisDirectory, WORKING_DIRECTORY)
+		assert workingDirectory.mkdirs()
+		workingDirectory.deleteOnExit()
 
-        createDummyFile(workingDirectory, "Heatmap&*.png")
-        createDummyFile(workingDirectory, "Heatmap.svg")
-        createDummyFile(workingDirectory, "jobInfo.txt")
-        createDummyFile(workingDirectory, "outputfile.txt")
-        createDummyFile(workingDirectory, "request.json")
-    }
+		service.asyncJobService = [isUserAllowedToExportResults: { currentUserBean, jobName -> true }]
+		service.zipService = new ZipService()
 
-    void createDummyFile(File directory, String fileName) {
-        File dummyFile = new File(directory, fileName)
-        dummyFile << FILE_CONTENTS
-    }
+		createDummyFile workingDirectory, 'Heatmap&*.png'
+		createDummyFile workingDirectory, 'Heatmap.svg'
+		createDummyFile workingDirectory, 'jobInfo.txt'
+		createDummyFile workingDirectory, 'outputfile.txt'
+		createDummyFile workingDirectory, 'request.json'
+	}
 
-    @Test
-    void testInitializeAttributes() {
-        def ArrayList<String> imageLinks = new ArrayList<String>()
-        service.initializeAttributes(ANALYSIS_NAME, "Analysis", imageLinks)
+	void createDummyFile(File directory, String fileName) {
+		File file = new File(directory, fileName)
+		file.deleteOnExit()
+		file << FILE_CONTENTS
+	}
 
-        assertTrue "File not found: Heatmap__.png", new File(workingDirectory, "Heatmap__.png").exists()
-        assertTrue "File not found: Heatmap.svg", new File(workingDirectory, "Heatmap.svg").exists()
-        assertTrue "File not found: jobInfo.txt", new File(workingDirectory, "jobInfo.txt").exists()
-        assertTrue "File not found: outputfile.txt", new File(workingDirectory, "outputfile.txt").exists()
-        assertTrue "File not found: request.json", new File(workingDirectory, "request.json").exists()
-        assertThat imageLinks, contains("/analysisFiles/user-Analysis-100/workingDirectory/Heatmap__.png")
-        assertThat service.zipLink.toString(), equalTo("/analysisFiles/user-Analysis-100/zippedData.zip")
-    }
+	@Test
+	void testInitializeAttributes() {
+		List<String> imageLinks = []
+		service.initializeAttributes(ANALYSIS_NAME, 'Analysis', imageLinks)
 
+		assertTrue 'File not found: Heatmap__.png', new File(workingDirectory, 'Heatmap__.png').exists()
+		assertTrue 'File not found: Heatmap.svg', new File(workingDirectory, 'Heatmap.svg').exists()
+		assertTrue 'File not found: jobInfo.txt', new File(workingDirectory, 'jobInfo.txt').exists()
+		assertTrue 'File not found: outputfile.txt', new File(workingDirectory, 'outputfile.txt').exists()
+		assertTrue 'File not found: request.json', new File(workingDirectory, 'request.json').exists()
+		assertThat imageLinks, contains('/analysisFiles/user-Analysis-100/workingDirectory/Heatmap__.png')
+		assertThat service.zipLink, equalTo('/analysisFiles/user-Analysis-100/zippedData.zip')
+	}
 }

@@ -11,41 +11,40 @@ import org.springframework.stereotype.Component
 @Scope('prototype')
 class OptionalColumnConfiguratorDecorator extends ColumnConfigurator {
 
-    @Autowired
-    ApplicationContext ctx
+	@Autowired
+	ApplicationContext ctx
 
-    ColumnConfigurator generalCase
+	ColumnConfigurator generalCase
+	ColumnConfigurator fallback
 
-    ColumnConfigurator fallback
+	/* if this param is non empty, it will be considered provided */
+	String keyForEnabled
 
-    /* if this param is non empty, it will be considered provided */
-    String keyForEnabled
+	@Override
+	protected void doAddColumn(Closure<Column> decorateColumn) {
+		ColumnConfigurator configuratorToUse
 
-    @Override
-    protected void doAddColumn(Closure<Column> decorateColumn) {
-        ColumnConfigurator configuratorToUse
+		if (getStringParam(keyForEnabled, false)) {
+			configuratorToUse = generalCase
+		}
+		else {
+			configuratorToUse = fallback
+		}
 
-        if (getStringParam(keyForEnabled, false)) {
-            configuratorToUse = generalCase
-        } else {
-            configuratorToUse = fallback
-        }
+		if (!configuratorToUse.header) {
+			configuratorToUse.header = header
+		}
 
-        if (!configuratorToUse.header) {
-            configuratorToUse.header = header
-        }
+		configuratorToUse.doAddColumn decorateColumn
+	}
 
-        configuratorToUse.doAddColumn decorateColumn
-    }
+	void setConstantColumnFallback(Object columnValue) {
+		if (!header) {
+			throw new IllegalStateException('Set this configurator\'s header before calling this method')
+		}
 
-    void setConstantColumnFallback(Object columnValue) {
-        if (!header) {
-            throw new IllegalStateException(
-                    'Set this configurator\'s header before calling this method')
-        }
-        SimpleAddColumnConfigurator c = ctx.getBean(SimpleAddColumnConfigurator)
-        c.column = new ConstantValueColumn(header: header,
-                                           value:  columnValue)
-        fallback = c
-    }
+		SimpleAddColumnConfigurator c = ctx.getBean(SimpleAddColumnConfigurator)
+		c.column = new ConstantValueColumn(header: header, value: columnValue)
+		fallback = c
+	}
 }

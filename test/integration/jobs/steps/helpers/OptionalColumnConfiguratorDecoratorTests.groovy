@@ -15,59 +15,55 @@ import static org.hamcrest.Matchers.is
 @TestMixin(JobsIntegrationTestMixin)
 class OptionalColumnConfiguratorDecoratorTests {
 
-    public static final String COLUMN_HEADER = 'SAMPLE_HEADER'
-    public static final String FALLBACK_VALUE = 'FALLBACK'
-    public static final String KEY_FOR_ENABLED = 'enabled'
+	public static final String COLUMN_HEADER = 'SAMPLE_HEADER'
+	public static final String FALLBACK_VALUE = 'FALLBACK'
+	public static final String KEY_FOR_ENABLED = 'enabled'
 
-    @Autowired
-    OptionalColumnConfiguratorDecorator testee
+	@Autowired
+	OptionalColumnConfiguratorDecorator testee
 
-    @Autowired
-    SimpleAddColumnConfigurator simpleAddColumnConfigurator
+	@Autowired
+	SimpleAddColumnConfigurator simpleAddColumnConfigurator
 
-    @Autowired
-    Table table
+	@Autowired
+	Table table
 
-    @Autowired
-    UserParameters params
+	@Autowired
+	UserParameters params
 
-    @Before
-    void before() {
-        Map data = [a: 1, b: 2]
-        simpleAddColumnConfigurator.column = new StubColumn(
-                header: COLUMN_HEADER, data: data)
+	@Before
+	void before() {
+		Map data = [a: 1, b: 2]
+		simpleAddColumnConfigurator.column = new StubColumn(header: COLUMN_HEADER, data: data)
 
-        testee.header = COLUMN_HEADER
+		testee.header = COLUMN_HEADER
 
-        testee.generalCase = simpleAddColumnConfigurator
-        testee.constantColumnFallback = FALLBACK_VALUE
-        testee.keyForEnabled = KEY_FOR_ENABLED
-    }
+		testee.generalCase = simpleAddColumnConfigurator
+		testee.constantColumnFallback = FALLBACK_VALUE
+		testee.keyForEnabled = KEY_FOR_ENABLED
+	}
 
-    @Test
-    void testSetConstantColumnFallbackIsUsed() {
-        Column stubColumn = new StubColumn(header: COLUMN_HEADER, data: [c: 3])
-        table.addColumn stubColumn, Collections.emptySet()
-        testee.addColumn()
+	@Test
+	void testSetConstantColumnFallbackIsUsed() {
+		Column stubColumn = new StubColumn(header: COLUMN_HEADER, data: [c: 3])
+		table.addColumn stubColumn, Collections.emptySet()
+		testee.addColumn()
 
-        table.buildTable()
+		table.buildTable()
 
-        def res = table.result
-        assertThat res, contains(is([3, FALLBACK_VALUE]))
-    }
+		def res = table.result
+		assertThat res, contains(is([3, FALLBACK_VALUE]))
+	}
 
-    @Test
-    void testGoesToTheGeneralCase() {
-        params.@map.putAll([
-                (KEY_FOR_ENABLED): 'something',
-        ])
+	@Test
+	void testGoesToTheGeneralCase() {
+		params.@map.putAll([(KEY_FOR_ENABLED): 'something',])
 
-        testee.addColumn()
+		testee.addColumn()
 
-        table.buildTable()
+		table.buildTable()
 
-        def res = table.result
-        assertThat res, contains(is([1]), is([2]))
-    }
-
+		def res = table.result
+		assertThat res, contains(is([1]), is([2]))
+	}
 }

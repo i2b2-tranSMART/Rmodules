@@ -16,40 +16,36 @@
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
-  <head>
-    <title>subsetPanel.html</title>
+<head>
+<title>subsetPanel.html</title>
+<meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
+<meta http-equiv="description" content="this is my page">
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<link rel="stylesheet" type="text/css" href="${resource(dir: 'css', file: 'datasetExplorer.css')}">
+</head>
+<body>
+<form>
 
-    <meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
-    <meta http-equiv="description" content="this is my page">
-    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
-    <link rel="stylesheet" type="text/css" href="${resource(dir:'css', file:'datasetExplorer.css')}">
+	<br/>
+	<br/>
+	<span class='AnalysisHeader'>Heatmap</span><br/><br/>
+	<i>Click on the heatmap image to open it in a new window as this may increase readability.</i><br><br>
+	<br/>
+	<br/>
+	<g:each var='location' in="${imageLocations}">
+	<a onclick="window.open('${resource(file: location, dir: 'images')}', '_blank')">
+		<g:img file="${location}" class='img-result-size'/>
+	</a>
+	<br/>
+	</g:each>
 
-  </head>
+	<br/>
+	<br/>
 
-  <body>
-    <form>
+	<g:if test="${zipLink}">
+	<a class='AnalysisLink' class='downloadLink' href="${resource(file: zipLink)}">Download raw R data</a>
+	</g:if>
 
-      <br />
-      <br />
-      <span class='AnalysisHeader'>Heatmap</span><br /><br />
-      <i>Click on the heatmap image to open it in a new window as this may increase readability.</i><br><br>
-      <br />
-      <br />
-      <g:each var="location" in="${imageLocations}">
-        <a onclick="window.open('${resource(file: location, dir: "images")}','_blank')">
-          <g:img file="${location}" class="img-result-size"></g:img>
-        </a>
-        <br />
-      </g:each>
-
-      <br />
-      <br />
-
-        <g:if test="${zipLink}">
-            <a class='AnalysisLink' class='downloadLink' href="${resource(file: zipLink)}">Download raw R data</a>
-        </g:if>
-
-    </form>
-  </body>
-
+</form>
+</body>
 </html>

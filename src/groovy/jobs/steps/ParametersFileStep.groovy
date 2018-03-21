@@ -1,26 +1,25 @@
 package jobs.steps
 
 import groovy.json.JsonOutput
+import groovy.transform.CompileStatic
 import jobs.UserParameters
 
-class ParametersFileStep implements Step{
+@CompileStatic
+class ParametersFileStep implements Step {
 
-    File temporaryDirectory
-    UserParameters params
+	File temporaryDirectory
+	UserParameters params
 
-    final String statusName = 'Writing parameters'
+	final String statusName = 'Writing parameters'
 
-    @Override
-    void execute() {
-        File jobInfoFile = new File(temporaryDirectory, 'jobInfo.txt')
+	void execute() {
+		File jobInfoFile = new File(temporaryDirectory, 'jobInfo.txt')
 
-        jobInfoFile.withWriter { BufferedWriter it ->
-            it.writeLine 'Parameters'
-            params.each { key, value ->
-                it.writeLine "\t$key -> $value"
-            }
-        }
-        File paramsFile = new File(temporaryDirectory, 'request.json')
-        paramsFile << JsonOutput.prettyPrint(params.toJSON())
-    }
+		jobInfoFile.withWriter { BufferedWriter writer ->
+			writer.writeLine 'Parameters'
+			params.each { key, value -> writer.writeLine "\t$key -> $value" 	}
+		}
+
+		new File(temporaryDirectory, 'request.json') << JsonOutput.prettyPrint(params.toJSON())
+	}
 }

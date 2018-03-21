@@ -14,118 +14,112 @@ import org.transmartproject.core.dataquery.clinical.PatientRow
 @Scope('job')
 class ClinicalDataRetriever {
 
-    // work with only this case now
-    //boolean joinSubsets = true
+	public static final String DATA_SOURCE_NAME = 'Clinical Data'
 
-    public static final String DATA_SOURCE_NAME = 'Clinical Data'
+	private List<ClinicalVariable> variables = []
 
-    private List<ClinicalVariable> variables = []
+	private boolean attachedToTable
+	private boolean resultsGiven
 
-    private boolean resultsGiven,
-                    attachedToTable
+	@Autowired
+	private ClinicalDataResource clinicalDataResource
 
-    @Autowired
-    private ClinicalDataResource clinicalDataResource
+	@Autowired
+	private ResultInstanceIdsHolder resultInstanceIdsHolder
 
-    @Autowired
-    private ResultInstanceIdsHolder resultInstanceIdsHolder
+	/* this method sort of handles the case of the same variable being added
+	 * twice. In some variable was submitted earlier, it returns the original
+	 * variable. The client should then use this return value instead of the
+	 * value it passed.
+	 *
+	 * No duplicates can be detected if the same variable is submitted via
+	 * concept path and then via concept code. */
 
+	ClinicalVariable leftShift(ClinicalVariable var) {
+		if (resultsGiven) {
+			throw new IllegalStateException('Cannot add column, results already opened')
+		}
 
-    /* this method sort of handles the case of the same variable being added
-     * twice. In some variable was submitted earlier, it returns the original
-     * variable. The client should then use this return value instead of the
-     * value it passed.
-     *
-     * No duplicates can be detected if the same variable is submitted via
-     * concept path and then via concept code. */
-    ClinicalVariable leftShift(ClinicalVariable var) {
-        if (resultsGiven) {
-            throw new IllegalStateException(
-                    'Cannot add column, results already opened')
-        }
-        int i = variables.indexOf var
-        if (i != -1) {
-            variables[i]
-        } else {
-            variables.add(var)
-            var
-        }
-    }
+		int i = variables.indexOf var
+		if (i != -1) {
+			variables[i]
+		}
+		else {
+			variables << var
+			var
+		}
+	}
 
-    ClinicalVariable leftShift(String conceptPath) {
-        this << createVariableFromConceptPath(conceptPath)
-    }
+	ClinicalVariable leftShift(String conceptPath) {
+		this << createVariableFromConceptPath(conceptPath)
+	}
 
-    ClinicalVariable createVariableFromConceptPath(String conceptPath) {
-        clinicalDataResource.createClinicalVariable(
-                ClinicalVariable.TERMINAL_CONCEPT_VARIABLE,
-                concept_path: conceptPath)
-    }
+	ClinicalVariable createVariableFromConceptPath(String conceptPath) {
+		clinicalDataResource.createClinicalVariable(
+				ClinicalVariable.TERMINAL_CONCEPT_VARIABLE,
+				concept_path: conceptPath)
+	}
 
-    List<ClinicalVariable> getVariables() {
-        Collections.unmodifiableList(variables)
-    }
+	List<ClinicalVariable> getVariables() {
+		Collections.unmodifiableList(variables)
+	}
 
-    TabularResult<ClinicalVariableColumn, PatientRow> getResults() {
-        if (!variables) {
-            throw new IllegalStateException('No variables provided')
-        }
-        if (resultsGiven) {
-            throw new IllegalStateException('Results already provided')
-        }
+	TabularResult<ClinicalVariableColumn, PatientRow> getResults() {
+		if (!variables) {
+			throw new IllegalStateException('No variables provided')
+		}
+		if (resultsGiven) {
+			throw new IllegalStateException('Results already provided')
+		}
 
-        resultsGiven = true
+		resultsGiven = true
 
-        clinicalDataResource.retrieveData(
-                resultInstanceIdsHolder.queryResults, variables)
-    }
+		clinicalDataResource.retrieveData resultInstanceIdsHolder.queryResults, variables
+	}
 
-    void attachToTable(Table table) {
-        if (attachedToTable) {
-            return
-        }
+	void attachToTable(Table table) {
+		if (attachedToTable) {
+			return
+		}
 
-        table.addDataSource(DATA_SOURCE_NAME,
-                new LazyDataSource(makeDataSource: this.&getResults))
+		table.addDataSource DATA_SOURCE_NAME, new LazyDataSource(makeDataSource: this.&getResults)
 
-        attachedToTable = true
-    }
+		attachedToTable = true
+	}
 
-    static class LazyDataSource implements Iterable, AutoCloseable {
+	static class LazyDataSource implements Iterable, AutoCloseable {
 
-        Closure<Iterable> makeDataSource
+		Closure<Iterable> makeDataSource
 
-        private Iterable storedDataSource
+		private Iterable storedDataSource
 
-        @Override
-        void close() throws Exception {
-            if (storedDataSource == null) {
-                return
-            }
+		void close() {
+			if (storedDataSource == null) {
+				return
+			}
 
-            if (dataSource instanceof Closeable) {
-                ((Closeable) dataSource).close()
-            } else if (dataSource instanceof AutoCloseable) {
-                ((AutoCloseable) dataSource).close()
-            }
-        }
+			if (dataSource instanceof Closeable) {
+				((Closeable) dataSource).close()
+			}
+			else if (dataSource instanceof AutoCloseable) {
+				((AutoCloseable) dataSource).close()
+			}
+		}
 
-        Iterable getDataSource() {
-            if (storedDataSource == null) {
-                storedDataSource = makeDataSource()
-                assert storedDataSource != null
-            }
-            storedDataSource
-        }
+		Iterable getDataSource() {
+			if (storedDataSource == null) {
+				storedDataSource = makeDataSource()
+				assert storedDataSource != null
+			}
+			storedDataSource
+		}
 
-        @Override
-        Iterator iterator() {
-            dataSource.iterator()
-        }
+		Iterator iterator() {
+			dataSource.iterator()
+		}
 
-        @Override
-        def invokeMethod(String name, args) {
-            dataSource.invokeMethod(name, args)
-        }
-    }
+		def invokeMethod(String name, args) {
+			dataSource.invokeMethod name, args
+		}
+	}
 }

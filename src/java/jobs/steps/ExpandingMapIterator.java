@@ -1,202 +1,208 @@
 package jobs.steps;
 
-import com.google.common.collect.*;
+import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.PeekingIterator;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 public class ExpandingMapIterator extends AbstractIterator<String[]> {
 
-    public ExpandingMapIterator(Iterator<List<Object>> preResults, List<Integer> mapIndexes) {
-        this(preResults, mapIndexes, 1);
-    }
+	public ExpandingMapIterator(Iterator<List<Object>> preResults, List<Integer> mapIndexes) {
+		this(preResults, mapIndexes, 1);
+	}
 
-    protected ExpandingMapIterator(Iterator<List<Object>> preResults,
-                                   List<Integer> mapIndexes,
-                                   int numberOfNewRowsPerMapColumn) {
-        this.numberOfNewRowsPerMapColumn = numberOfNewRowsPerMapColumn;
-        if (mapIndexes.isEmpty()) {
-            throw new IllegalArgumentException("maxIndexes cannot be empty");
-        }
-        this.preResults = (PeekingIterator) (preResults instanceof PeekingIterator ?
-                preResults : Iterators.peekingIterator(preResults));
-        setTransformedColumnsIndexes(mapIndexes);
-    }
-    
-    private PeekingIterator<List<Object>> preResults;
+	protected ExpandingMapIterator(Iterator<List<Object>> preResults, List<Integer> mapIndexes,
+	                               int numberOfNewRowsPerMapColumn) {
+		this.numberOfNewRowsPerMapColumn = numberOfNewRowsPerMapColumn;
+		if (mapIndexes.isEmpty()) {
+			throw new IllegalArgumentException("maxIndexes cannot be empty");
+		}
 
-    /* we don't support expanding different columns to
-     * different numbers of extra columns */
-    protected int numberOfNewRowsPerMapColumn = 1;
+		this.preResults = (PeekingIterator) (preResults instanceof PeekingIterator ?
+				preResults : Iterators.peekingIterator(preResults));
+		setTransformedColumnsIndexes(mapIndexes);
+	}
 
-    /* can be shared between calls to computeNext() */
-    private String[] _returnArray;
+	private PeekingIterator<List<Object>> preResults;
 
-    protected String[] getReturnArray() {
-        assert originalRow != null;
+	/* we don't support expanding different columns to
+	 * different numbers of extra columns */
+	protected int numberOfNewRowsPerMapColumn = 1;
 
-        if (_returnArray == null) {
-            int outputSize = originalRow.size() +
-                    transformedColumnsMap.size() * numberOfNewRowsPerMapColumn;
-            _returnArray = new String[outputSize];
-        }
+	/* can be shared between calls to computeNext() */
+	private String[] returnArray;
 
-        return _returnArray;
-    }
+	protected String[] getReturnArray() {
+		assert originalRow != null;
 
-    private List<Object> originalRow;
+		if (returnArray == null) {
+			int outputSize = originalRow.size() +
+					transformedColumnsMap.size() * numberOfNewRowsPerMapColumn;
+			returnArray = new String[outputSize];
+		}
 
-    private List<Set<Map.Entry<String, Object>>> mapIterables;
+		return returnArray;
+	}
 
-    private List<IteratorWithCurrent<Map.Entry<String, Object>>> mapIterators;
+	private List<Object> originalRow;
 
-    private Integer maxRank;
+	private List<Set<Map.Entry<String, Object>>> mapIterables;
 
-    /* original index -> new index */
-    private Map<Integer, Integer> transformedColumnsMap = Maps.newTreeMap();
+	private List<IteratorWithCurrent<Map.Entry<String, Object>>> mapIterators;
 
-    private void setTransformedColumnsIndexes(List<Integer> indexes) {
-        int count = 0;
-        for (Integer i: indexes) {
-            transformedColumnsMap.put(i,
-                    i + (count++ * numberOfNewRowsPerMapColumn));
-        }
-    }
+	private Integer maxRank;
 
-    @Override
-    protected String[] computeNext() {
-        if (originalRow == null) {
-            // no row read yet or previous one already exhausted;
-            if (!readOriginalRow()) {
-                return null; /* we got to the end, endOfData() was called */
-            }
-        }
+	/* original index -> new index */
+	private Map<Integer, Integer> transformedColumnsMap = Maps.newTreeMap();
 
-        return nextGeneratedRow();
-    }
+	private void setTransformedColumnsIndexes(List<Integer> indexes) {
+		int count = 0;
+		for (Integer i : indexes) {
+			transformedColumnsMap.put(i, i + (count++ * numberOfNewRowsPerMapColumn));
+		}
+	}
 
-    private boolean readOriginalRow() { // false if nothing else to read
-        while (preResults.hasNext()) {
-            originalRow = preResults.next();
+	@Override
+	protected String[] computeNext() {
+		if (originalRow == null) {
+			// no row read yet or previous one already exhausted;
+			if (!readOriginalRow()) {
+				return null; /* we got to the end, endOfData() was called */
+			}
+		}
 
-            if (resetIterables()) {
-                prefillUnchangedColumns();
-                return true;
-            } else {
-                // one or more iterables are empty; no rows will be generated
-                // for this original row
-                //continue
-            }
-        }
+		return nextGeneratedRow();
+	}
 
-        // no more results;
-        endOfData();
-        return false;
-    }
+	private boolean readOriginalRow() { // false if nothing else to read
+		while (preResults.hasNext()) {
+			originalRow = preResults.next();
 
-    private void prefillUnchangedColumns() {
-        // original indexes of transformed cols
-        Iterator<Integer> nextTransformedIterator = Iterators.concat(
-                transformedColumnsMap.keySet().iterator(),
-                Iterators.forArray(new Integer[] {Integer.MAX_VALUE}));
-        Integer nextTransformed = nextTransformedIterator.next();
+			if (resetIterables()) {
+				prefillUnchangedColumns();
+				return true;
+			}
 
-        int writingIndex = 0;
-        for (int index = 0; index < originalRow.size(); index++) {
-            Object value = originalRow.get(index);
-            if (index == nextTransformed) {
-                writingIndex += numberOfNewRowsPerMapColumn + 1;
-                nextTransformed = nextTransformedIterator.next();
-            } else {
-                getReturnArray()[writingIndex++] = value.toString();
-            }
-        }
-    }
+			// one or more iterables are empty; no rows will be generated
+			// for this original row
+			//continue
+		}
 
-    private boolean resetIterables() { // false if any iterable is empty
-        Set<Integer> originalIndexes = transformedColumnsMap.keySet();
+		// no more results;
+		endOfData();
+		return false;
+	}
 
-        mapIterables = Lists.newArrayListWithCapacity(originalIndexes.size());
-        for (int index: originalIndexes) {
-            assert originalRow.get(index) instanceof Map;
-            mapIterables.add(((Map) originalRow.get(index)).entrySet());
-        }
+	private void prefillUnchangedColumns() {
+		// original indexes of transformed cols
+		Iterator<Integer> nextTransformedIterator = Iterators.concat(
+				transformedColumnsMap.keySet().iterator(),
+				Iterators.forArray(new Integer[]{Integer.MAX_VALUE}));
+		Integer nextTransformed = nextTransformedIterator.next();
 
-        mapIterators = Lists.newArrayListWithCapacity(mapIterables.size());
-        for (Iterable<Map.Entry<String, Object>> iterable: mapIterables) {
-            IteratorWithCurrent iteratorWithCurrent = new IteratorWithCurrent();
-            iteratorWithCurrent.inner = iterable.iterator();
-            mapIterators.add(iteratorWithCurrent);
-        }
+		int writingIndex = 0;
+		for (int index = 0; index < originalRow.size(); index++) {
+			Object value = originalRow.get(index);
+			if (index == nextTransformed) {
+				writingIndex += numberOfNewRowsPerMapColumn + 1;
+				nextTransformed = nextTransformedIterator.next();
+			}
+			else {
+				getReturnArray()[writingIndex++] = value.toString();
+			}
+		}
+	}
 
-        try {
-            for (IteratorWithCurrent<Map.Entry<String, Object>> iterator: mapIterators) {
-                iterator.next();
-            }
-        } catch (NoSuchElementException nse) {
-            return false; // one of the iterators is empty
-        }
+	private boolean resetIterables() { // false if any iterable is empty
+		Set<Integer> originalIndexes = transformedColumnsMap.keySet();
 
-        maxRank = mapIterables.size() - 1;
-        return true;
-    }
+		mapIterables = Lists.newArrayListWithCapacity(originalIndexes.size());
+		for (int index : originalIndexes) {
+			assert originalRow.get(index) instanceof Map;
+			mapIterables.add(((Map) originalRow.get(index)).entrySet());
+		}
 
-    private IteratorWithCurrent<Map.Entry<String, Object>> createIterator(int rank) {
-        IteratorWithCurrent<Map.Entry<String, Object>> r =
-                new IteratorWithCurrent<Map.Entry<String, Object>>();
-        r.inner = mapIterables.get(rank).iterator();
-        r.next();
-        return r;
-    }
+		mapIterators = Lists.newArrayListWithCapacity(mapIterables.size());
+		for (Iterable<Map.Entry<String, Object>> iterable : mapIterables) {
+			IteratorWithCurrent iteratorWithCurrent = new IteratorWithCurrent();
+			iteratorWithCurrent.inner = iterable.iterator();
+			mapIterators.add(iteratorWithCurrent);
+		}
 
-    protected void writeEntry(Map.Entry<String, Object> entry, int index) {
-        getReturnArray()[index] = entry.getValue().toString();
-        getReturnArray()[index + 1] = entry.getKey();
-    }
+		try {
+			for (IteratorWithCurrent<Map.Entry<String, Object>> iterator : mapIterators) {
+				iterator.next();
+			}
+		}
+		catch (NoSuchElementException nse) {
+			return false; // one of the iterators is empty
+		}
 
-    private String[] nextGeneratedRow() {
-        int i = 0;
-        for (Integer newColumnIndex: transformedColumnsMap.values()) {
-            Map.Entry<String, Object> entry = mapIterators.get(i++).current;
+		maxRank = mapIterables.size() - 1;
+		return true;
+	}
 
-            assert entry != null;
+	private IteratorWithCurrent<Map.Entry<String, Object>> createIterator(int rank) {
+		IteratorWithCurrent<Map.Entry<String, Object>> r =
+				new IteratorWithCurrent<Map.Entry<String, Object>>();
+		r.inner = mapIterables.get(rank).iterator();
+		r.next();
+		return r;
+	}
 
-            writeEntry(entry, newColumnIndex);
-        }
+	protected void writeEntry(Map.Entry<String, Object> entry, int index) {
+		getReturnArray()[index] = entry.getValue().toString();
+		getReturnArray()[index + 1] = entry.getKey();
+	}
 
-        /* move forward */
-        Integer currentRank = maxRank;
-        while (!mapIterators.get(currentRank).hasNext()) {
-            if (currentRank == 0) {
-                originalRow = null /* everything seen there */;
-                return getReturnArray();
-            }
-            mapIterators.set(currentRank, createIterator(currentRank));
-            currentRank--;
-        }
-        mapIterators.get(currentRank).next();
+	private String[] nextGeneratedRow() {
+		int i = 0;
+		for (Integer newColumnIndex : transformedColumnsMap.values()) {
+			Map.Entry<String, Object> entry = mapIterators.get(i++).current;
 
-        return getReturnArray();
-    }
+			assert entry != null;
 
-    public static class IteratorWithCurrent<T> implements Iterator<T> {
+			writeEntry(entry, newColumnIndex);
+		}
 
-        Iterator<T> inner;
+		/* move forward */
+		Integer currentRank = maxRank;
+		while (!mapIterators.get(currentRank).hasNext()) {
+			if (currentRank == 0) {
+				originalRow = null /* everything seen there */;
+				return getReturnArray();
+			}
+			mapIterators.set(currentRank, createIterator(currentRank));
+			currentRank--;
+		}
+		mapIterators.get(currentRank).next();
 
-        T current;
+		return getReturnArray();
+	}
 
-        @Override
-        public boolean hasNext() {
-            return inner.hasNext();
-        }
+	public static class IteratorWithCurrent<T> implements Iterator<T> {
 
-        @Override
-        public T next() {
-            return (current = inner.next());
-        }
+		Iterator<T> inner;
 
-        @Override
-        public void remove() {
-            inner.remove();
-        }
-    }
+		T current;
+
+		public boolean hasNext() {
+			return inner.hasNext();
+		}
+
+		public T next() {
+			return (current = inner.next());
+		}
+
+		public void remove() {
+			inner.remove();
+		}
+	}
 }

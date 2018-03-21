@@ -18,33 +18,29 @@
 <html>
 <head>
 <title>subsetPanel.html</title>
-
 <meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
 <meta http-equiv="description" content="this is my page">
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
-<link rel="stylesheet" type="text/css" href="${resource(dir:'css', file:'datasetExplorer.css')}">
-
+<link rel="stylesheet" type="text/css" href="${resource(dir: 'css', file: 'datasetExplorer.css')}">
 </head>
-
 <body>
-	<form>	
-		<span class='AnalysisHeader'>Scatter Plot</span><br />
+<form>
+	<span class='AnalysisHeader'>Scatter Plot</span><br/>
 
-		<g:each var="location" in="${imageLocations}">
-            <g:img file="${location}" width="600" height="600"></g:img> <br />
-		</g:each>
-		
-		<br />
-		<span class='AnalysisHeader'>Linear Regression Result</span><br /><br />
-		
-		${linearRegressionData}
-		
-		<br />
-        <g:if test="${zipLink}">
-            <a class='AnalysisLink' class='downloadLink' href="${resource(file: zipLink)}">Download raw R data</a>
-        </g:if>
-		
-	</form>
+	<g:each var='location' in="${imageLocations}">
+	<g:img file="${location}" width='600' height='600'/> <br/>
+	</g:each>
+
+	<br/>
+	<span class='AnalysisHeader'>Linear Regression Result</span><br/><br/>
+
+	${linearRegressionData}
+
+	<br/>
+	<g:if test="${zipLink}">
+	<a class='AnalysisLink' class='downloadLink' href="${resource(file: zipLink)}">Download raw R data</a>
+	</g:if>
+
+</form>
 </body>
-
 </html>

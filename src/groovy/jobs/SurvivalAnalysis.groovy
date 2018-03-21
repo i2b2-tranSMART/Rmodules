@@ -1,6 +1,10 @@
 package jobs
 
-import jobs.steps.*
+import groovy.transform.CompileStatic
+import jobs.steps.BuildTableResultStep
+import jobs.steps.MultiRowAsGroupDumpTableResultsStep
+import jobs.steps.RCommandsStep
+import jobs.steps.Step
 import jobs.steps.helpers.CensorColumnConfigurator
 import jobs.steps.helpers.NumericColumnConfigurator
 import jobs.steps.helpers.OptionalBinningColumnConfigurator
@@ -18,109 +22,108 @@ import org.transmartproject.core.dataquery.highdim.projections.Projection
 import static jobs.steps.AbstractDumpStep.DEFAULT_OUTPUT_FILE_NAME
 
 /**
- * Created by carlos on 1/20/14.
+ * @author carlos
  */
+@CompileStatic
 @Component
 @Scope('job')
 class SurvivalAnalysis extends AbstractAnalysisJob implements InitializingBean {
 
-    @Autowired
-    SimpleAddColumnConfigurator primaryKeyColumnConfigurator
+	@Autowired
+	SimpleAddColumnConfigurator primaryKeyColumnConfigurator
 
-    @Autowired
-    NumericColumnConfigurator timeVariableConfigurator
+	@Autowired
+	NumericColumnConfigurator timeVariableConfigurator
 
-    @Autowired
-    @Qualifier('general')
-    OptionalBinningColumnConfigurator categoryVariableConfigurator
+	@Autowired
+	@Qualifier('general')
+	OptionalBinningColumnConfigurator categoryVariableConfigurator
 
-    @Autowired
-    CensorColumnConfigurator censoringVariableConfigurator
+	@Autowired
+	CensorColumnConfigurator censoringVariableConfigurator
 
-    @Autowired
-    Table table
+	@Autowired
+	Table table
 
-    @Override
-    void afterPropertiesSet() throws Exception {
-        primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
+	void afterPropertiesSet() {
+		primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
 
-        configureTimeVariableConfigurator()
-        configureCategoryVariableConfigurator()
-        configureCensoringVariableConfigurator()
-    }
+		configureTimeVariableConfigurator()
+		configureCategoryVariableConfigurator()
+		configureCensoringVariableConfigurator()
+	}
 
-    void configureTimeVariableConfigurator() {
-        timeVariableConfigurator.header = 'TIME'
-        timeVariableConfigurator.setKeys('time')
-        timeVariableConfigurator.alwaysClinical = true
-    }
+	void configureTimeVariableConfigurator() {
+		timeVariableConfigurator.header = 'TIME'
+		timeVariableConfigurator.setKeys('time')
+		timeVariableConfigurator.alwaysClinical = true
+	}
 
-    void configureCategoryVariableConfigurator() {
-        categoryVariableConfigurator.required = false
-        categoryVariableConfigurator.header             = 'CATEGORY'
-        categoryVariableConfigurator.projection         = Projection.LOG_INTENSITY_PROJECTION
-        categoryVariableConfigurator.multiRow           = true
+	void configureCategoryVariableConfigurator() {
+		categoryVariableConfigurator.required = false
+		categoryVariableConfigurator.header = 'CATEGORY'
+		categoryVariableConfigurator.projection = Projection.LOG_INTENSITY_PROJECTION
+		categoryVariableConfigurator.multiRow = true
 
-        categoryVariableConfigurator.setKeys('dependent')
-        categoryVariableConfigurator.binningConfigurator.setKeys('')
-        categoryVariableConfigurator.keyForConceptPaths = 'categoryVariable'
+		categoryVariableConfigurator.setKeys('dependent')
+		categoryVariableConfigurator.binningConfigurator.setKeys('')
+		categoryVariableConfigurator.keyForConceptPaths = 'categoryVariable'
 
-        def missingValueAction = categoryVariableConfigurator.getConceptPaths() ?
-                new MissingValueAction.DropRowMissingValueAction() :
-                new MissingValueAction.ConstantReplacementMissingValueAction(replacement: 'STUDY')
+		def missingValueAction = categoryVariableConfigurator.conceptPaths ?
+				new MissingValueAction.DropRowMissingValueAction() :
+				new MissingValueAction.ConstantReplacementMissingValueAction(replacement: 'STUDY')
 
-        categoryVariableConfigurator.missingValueAction = missingValueAction
-        categoryVariableConfigurator.binningConfigurator.missingValueAction = missingValueAction
-    }
+		categoryVariableConfigurator.missingValueAction = missingValueAction
+		categoryVariableConfigurator.binningConfigurator.missingValueAction = missingValueAction
+	}
 
-    void configureCensoringVariableConfigurator() {
-        censoringVariableConfigurator.header             = 'CENSOR'
-        censoringVariableConfigurator.keyForConceptPaths = 'censoringVariable'
-    }
+	void configureCensoringVariableConfigurator() {
+		censoringVariableConfigurator.header = 'CENSOR'
+		censoringVariableConfigurator.keyForConceptPaths = 'censoringVariable'
+	}
 
-    protected List<Step> prepareSteps() {
-        List<Step> steps = []
+	protected List<Step> prepareSteps() {
+		List<Step> steps = []
 
-        steps << new BuildTableResultStep(
-                table:         table,
-                configurators: [primaryKeyColumnConfigurator,
-                        timeVariableConfigurator,
-                        censoringVariableConfigurator,
-                        categoryVariableConfigurator,
-                ])
+		steps << new BuildTableResultStep(
+				table: table,
+				configurators: [primaryKeyColumnConfigurator,
+				                timeVariableConfigurator,
+				                censoringVariableConfigurator,
+				                categoryVariableConfigurator,
+				])
 
-        steps << new MultiRowAsGroupDumpTableResultsStep(
-                table: table,
-                temporaryDirectory: temporaryDirectory,
-                outputFileName: DEFAULT_OUTPUT_FILE_NAME)
+		steps << new MultiRowAsGroupDumpTableResultsStep(
+				table: table,
+				temporaryDirectory: temporaryDirectory,
+				outputFileName: DEFAULT_OUTPUT_FILE_NAME)
 
-        steps << new RCommandsStep(
-                temporaryDirectory: temporaryDirectory,
-                scriptsDirectory: scriptsDirectory,
-                rStatements: RStatements,
-                studyName: studyName,
-                params: params,
-                extraParams: [inputFileName: DEFAULT_OUTPUT_FILE_NAME])
+		steps << new RCommandsStep(
+				temporaryDirectory: temporaryDirectory,
+				scriptsDirectory: scriptsDirectory,
+				rStatements: RStatements,
+				studyName: studyName,
+				params: params,
+				extraParams: [inputFileName: DEFAULT_OUTPUT_FILE_NAME])
 
-        steps
-    }
+		steps
+	}
 
-    @Override
-    protected List<String> getRStatements() {
-        [
-            '''source('$pluginDirectory/Survival/CoxRegressionLoader.r')''',
-            '''CoxRegression.loader(
+	@Override
+	protected List<String> getRStatements() {
+		[
+				'''source('$pluginDirectory/Survival/CoxRegressionLoader.r')''',
+				'''CoxRegression.loader(
                 input.filename      = '$inputFileName')''',
-            '''source('$pluginDirectory/Survival/SurvivalCurveLoader.r')''',
-            '''SurvivalCurve.loader(
+				'''source('$pluginDirectory/Survival/SurvivalCurveLoader.r')''',
+				'''SurvivalCurve.loader(
                 input.filename      = '$inputFileName',
                 concept.time        = '$timeVariable')''',
-        ]
-    }
+		]
+	}
 
-    @Override
-    protected getForwardPath() {
-        "/survivalAnalysis/survivalAnalysisOutput?jobName=$name"
-    }
-
+	@Override
+	protected String getForwardPath() {
+		"/survivalAnalysis/survivalAnalysisOutput?jobName=$name"
+	}
 }

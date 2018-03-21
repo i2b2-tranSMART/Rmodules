@@ -1,6 +1,6 @@
 package jobs.steps.helpers
 
-import groovy.util.logging.Log4j
+import groovy.util.logging.Slf4j
 import jobs.table.Column
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Scope
@@ -29,76 +29,76 @@ import javax.annotation.PostConstruct
  */
 @Component
 @Scope('prototype')
-@Log4j
+@Slf4j('logger')
 class ContextNumericVariableColumnConfigurator extends ColumnConfigurator {
 
-    /* properties to be set externally:
-     *
-     * - header
-     * - projection
-     * - keyForConceptPaths/keyForConceptPath (indifferent which)
-     * - keyForDataType
-     * - keyForSearchKeywordId
-     * - multiRow
-     * - multiConcepts
-     */
+	/* properties to be set externally:
+	 *
+	 * - header
+	 * - projection
+	 * - keyForConceptPaths/keyForConceptPath (indifferent which)
+	 * - keyForDataType
+	 * - keyForSearchKeywordId
+	 * - multiRow
+	 * - multiConcepts
+	 */
 
-    @Autowired
-    private MultiNumericClinicalVariableColumnConfigurator multiClinicalConfigurator
+	@Autowired
+	private MultiNumericClinicalVariableColumnConfigurator multiClinicalConfigurator
 
-    @Autowired
-    private HighDimensionColumnConfigurator multiHighDimConfigurator
+	@Autowired
+	private HighDimensionColumnConfigurator multiHighDimConfigurator
 
-    @PostConstruct
-    void init() {
-        multiRow = true
-    }
+	@PostConstruct
+	void init() {
+		multiRow = true
+	}
 
-    @Override
-    protected void doAddColumn(Closure<Column> decorateColumn) {
-        if (clinicalData) {
-            log.debug("$keyForDataType indicates clinical data; " +
-                    "using the MultiNumericClinicalVariableColumnConfigurator")
-            multiClinicalConfigurator.doAddColumn decorateColumn
-        } else {
-            log.debug("$keyForDataType indicates high dim data; " +
-                    "using the HighDimensionColumnConfigurator")
-            multiHighDimConfigurator.doAddColumn decorateColumn
-        }
-    }
+	@Override
+	protected void doAddColumn(Closure<Column> decorateColumn) {
+		if (clinicalData) {
+			logger.debug '{} indicates clinical data; using the MultiNumericClinicalVariableColumnConfigurator', $keyForDataType
+			multiClinicalConfigurator.doAddColumn decorateColumn
+		}
+		else {
+			logger.debug '{} indicates high dim data; using the HighDimensionColumnConfigurator', keyForDataType
+			multiHighDimConfigurator.doAddColumn decorateColumn
+		}
+	}
 
-    String getKeyForDataType() {
-        multiHighDimConfigurator.keyForDataType
-    }
+	String getKeyForDataType() {
+		multiHighDimConfigurator.keyForDataType
+	}
 
 
-    List<String> getConceptPaths() {
-        multiHighDimConfigurator.conceptPaths
-    }
+	List<String> getConceptPaths() {
+		multiHighDimConfigurator.conceptPaths
+	}
 
-    boolean isClinicalData() {
-        getStringParam(keyForDataType) ==
-                NumericColumnConfigurator.CLINICAL_DATA_TYPE_VALUE
-    }
+	boolean isClinicalData() {
+		getStringParam(keyForDataType) == NumericColumnConfigurator.CLINICAL_DATA_TYPE_VALUE
+	}
 
-    void setProperty(String name, Object value) {
-        if (name == 'keyForConceptPath' || name == 'keyForConceptPaths') {
-            multiClinicalConfigurator.keyForConceptPaths = value
-            multiHighDimConfigurator.keyForConceptPath   = value
-            return
-        }
+	void setProperty(String name, value) {
+		if (name == 'keyForConceptPath' || name == 'keyForConceptPaths') {
+			multiClinicalConfigurator.keyForConceptPaths = value
+			multiHighDimConfigurator.keyForConceptPath = value
+			return
+		}
 
-        boolean found = false
-        if (multiClinicalConfigurator.hasProperty(name)) {
-            multiClinicalConfigurator.setProperty name, value
-            found = true
-        }
-        if (multiHighDimConfigurator.hasProperty(name)) {
-            multiHighDimConfigurator.setProperty name, value
-            found = true
-        }
-        if (!found) {
-            throw new MissingPropertyException(name, getClass())
-        }
-    }
+		boolean found = false
+		if (multiClinicalConfigurator.hasProperty(name)) {
+			multiClinicalConfigurator.setProperty name, value
+			found = true
+		}
+
+		if (multiHighDimConfigurator.hasProperty(name)) {
+			multiHighDimConfigurator.setProperty name, value
+			found = true
+		}
+
+		if (!found) {
+			throw new MissingPropertyException(name, getClass())
+		}
+	}
 }

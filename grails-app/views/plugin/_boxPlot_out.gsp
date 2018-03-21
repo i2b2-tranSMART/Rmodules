@@ -18,43 +18,39 @@
 <html>
 <head>
 <title>subsetPanel.html</title>
-
 <meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
 <meta http-equiv="description" content="this is my page">
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
-<link rel="stylesheet" type="text/css" href="${resource(dir:'css', file:'datasetExplorer.css')}">
-
+<link rel="stylesheet" type="text/css" href="${resource(dir: 'css', file: 'datasetExplorer.css')}">
 </head>
-
 <body>
-	<form>
-	
-		<br />
-		<br />		
-		<span class='AnalysisHeader'>Box Plot</span><br /><br />
-		
-        <g:each var="location" in="${imageLocations}">
-            <g:img file="${location}" width="600" height="600"></g:img>
-        </g:each>
-	
-		<br />
-		<br />	
-		${legendText}	
-	
-		<br />
-		<br />	
-	
-		${ANOVAData}
-		
-		<br />
+<form>
 
-        <g:if test="${zipLink}">
-            <div>
-                <a class='AnalysisLink' class='downloadLink' href="${resource(file: zipLink)}">Download raw R data</a>
-            </div>
-        </g:if>
-		
-	</form>
+	<br/>
+	<br/>
+	<span class='AnalysisHeader'>Box Plot</span><br/><br/>
+
+	<g:each var='location' in="${imageLocations}">
+	<g:img file="${location}" width='600' height='600'/>
+	</g:each>
+
+	<br/>
+	<br/>
+	${legendText}
+
+	<br/>
+	<br/>
+
+	${ANOVAData}
+
+	<br/>
+
+	<g:if test="${zipLink}">
+	<div>
+		<a class='AnalysisLink' class='downloadLink' href="${resource(file: zipLink)}">Download raw R data</a>
+	</div>
+	</g:if>
+
+</form>
 </body>
-
 </html>

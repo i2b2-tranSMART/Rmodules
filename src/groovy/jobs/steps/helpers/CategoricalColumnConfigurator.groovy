@@ -12,45 +12,38 @@ import org.transmartproject.core.dataquery.clinical.ClinicalVariable
 @Scope('prototype')
 class CategoricalColumnConfigurator extends ColumnConfigurator {
 
-    String keyForConceptPaths
+	String keyForConceptPaths
 
-    @Autowired
-    private ClinicalDataRetriever clinicalDataRetriever
+	@Autowired
+	private ClinicalDataRetriever clinicalDataRetriever
 
-    @Override
-    protected void doAddColumn(Closure<Column> decorateColumn) {
+	@Override
+	protected void doAddColumn(Closure<Column> decorateColumn) {
 
-        String conceptPaths = getConceptPaths()
+		String conceptPaths = getConceptPaths()
 
-        if (conceptPaths != '') {
-            Set<ClinicalVariable> variables =
-                    conceptPaths.split(/\|/).collect {
-                        clinicalDataRetriever.createVariableFromConceptPath it.trim()
-                    }
+		if (conceptPaths) {
+			Set<ClinicalVariable> variables = conceptPaths.split(/\|/).collect { String s ->
+				clinicalDataRetriever.createVariableFromConceptPath s.trim()
+			}
 
-            variables = variables.collect {
-                clinicalDataRetriever << it
-            }
+			variables = variables.collect { clinicalDataRetriever << it }
 
-            clinicalDataRetriever.attachToTable table
+			clinicalDataRetriever.attachToTable table
 
-            table.addColumn(
-                    decorateColumn.call(
-                            new CategoricalVariableColumn(
-                                    header:    header,
-                                    leafNodes: variables)),
-                    [ClinicalDataRetriever.DATA_SOURCE_NAME] as Set)
-        } else {
-            //optional, empty value column
-            table.addColumn(new ConstantValueColumn(
-                            header: header,
-                            missingValueAction: missingValueAction),
-                    Collections.emptySet())
-        }
-    }
+			table.addColumn(decorateColumn(
+					new CategoricalVariableColumn(header: header, leafNodes: variables)),
+					[ClinicalDataRetriever.DATA_SOURCE_NAME] as Set)
+		}
+		else {
+			//optional, empty value column
+			table.addColumn(new ConstantValueColumn(header: header, missingValueAction: missingValueAction),
+					Collections.emptySet())
+		}
+	}
 
-    String getConceptPaths() {
-        //if required this will fail on empty conceptPaths
-        getStringParam(keyForConceptPaths, required)
-    }
+	String getConceptPaths() {
+		//if required this will fail on empty conceptPaths
+		getStringParam keyForConceptPaths, required
+	}
 }

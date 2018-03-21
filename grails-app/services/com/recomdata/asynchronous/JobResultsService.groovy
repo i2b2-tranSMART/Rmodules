@@ -5,7 +5,7 @@
  *
  * This product includes software developed at Janssen Research & Development, LLC.
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License 
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
  * as published by the Free Software  * Foundation, either version 3 of the License, or (at your option) any later version, along with the following terms:
  * 1.	You may convey a work based on this program in accordance with section 5, provided that you retain the above notices.
  * 2.	You may convey verbatim copies of this program code as you receive it, in any medium, provided that you retain the above notices.
@@ -17,28 +17,28 @@
  *
  ******************************************************************/
 
-/**
- * $Id: JobResultsService.groovy 9178 2011-08-24 13:50:06Z mmcduffie $
- */
 package com.recomdata.asynchronous
 
+import groovy.util.logging.Slf4j
+
 /**
- * JobResultsService handles the management of the asynchronous job results
+ * Handles the management of the asynchronous job results
  *
- * @author $Author: mmcduffie $
- * @version $Revision: 9178 $
+ * @author mmcduffie
  */
+@Slf4j('logger')
 class JobResultsService {
 
-    boolean transactional = false
+	static transactional = false
 
-    @Delegate Map jobResults = [:].asSynchronized()
+	@Delegate
+	Map jobResults = [:].asSynchronized()
 
-    boolean isJobCancelled(String jobName) {
-        boolean isJobCancelled = jobResults[jobName]["Status"] == "Cancelled"
-        if (isJobCancelled) {
-            log.warn("${jobName} has been cancelled")
-        }
-        isJobCancelled
-    }
+	boolean isJobCancelled(String jobName) {
+		boolean isJobCancelled = jobResults[jobName]['Status'] == 'Cancelled'
+		if (isJobCancelled) {
+			logger.warn '{} has been cancelled', jobName
+		}
+		isJobCancelled
+	}
 }

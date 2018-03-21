@@ -1,5 +1,6 @@
 package jobs.table.columns
 
+import com.google.common.base.Objects
 import groovy.transform.CompileStatic
 import jobs.table.BackingMap
 import jobs.table.Column
@@ -8,36 +9,25 @@ import jobs.table.MissingValueAction
 @CompileStatic
 abstract class AbstractColumn implements Column {
 
-    String header
+	String header
 
-    MissingValueAction missingValueAction =
-            new MissingValueAction.DropRowMissingValueAction()
+	MissingValueAction missingValueAction = new MissingValueAction.DropRowMissingValueAction()
 
-    @Override
-    void onDataSourceDepleted(String dataSourceName, Iterable dataSource) {
-        /* override to do something here */
-    }
+	void onDataSourceDepleted(String dataSourceName, Iterable dataSource) {
+		// override to do something here
+	}
 
-    @Override
-    void beforeDataSourceIteration(String dataSourceName, Iterable dataSource) {
-        /* override to do something here */
-    }
+	void beforeDataSourceIteration(String dataSourceName, Iterable dataSource) {
+		// override to do something here
+	}
 
-    @Override
-    void onAllDataSourcesDepleted(int columnNumber, BackingMap backingMap) {
-        /* override to do something here */
-    }
+	void onAllDataSourcesDepleted(int columnNumber, BackingMap backingMap) {
+		// override to do something here
+	}
 
-    @Override
-    Closure<Object> getValueTransformer() {
-        null
-    }
+	Closure getValueTransformer() {}
 
-
-    @Override
-    public String toString() {
-        com.google.common.base.Objects.toStringHelper(this).
-                add("header", header).
-                toString();
-    }
+	String toString() {
+		Objects.toStringHelper(this).add('header', header).toString()
+	}
 }

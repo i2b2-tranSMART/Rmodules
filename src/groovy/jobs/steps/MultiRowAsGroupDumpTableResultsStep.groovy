@@ -27,80 +27,80 @@ import org.transmartproject.core.exceptions.EmptySetException
 
 class MultiRowAsGroupDumpTableResultsStep extends SimpleDumpTableResultStep {
 
-    protected List<Integer> transformedColumnsIndexes = []
+	protected List<Integer> transformedColumnsIndexes = []
 
-    protected PeekingIterator<List<Object>> preResults
+	protected PeekingIterator<List<Object>> preResults
 
-    /* Groovy has an odd preference to use fields directly in a way
-     * that breaks property overrides:
-     *
-     * class A { String f = 'f'; def getK() { this.f } }
-     * class B extends A { String getF() { 'g' } }
-     * b = new B()
-     * b.f // returns g
-     * b.k // returns f
-     *
-     * So use _headers instead
-     *
-     * And it has to be public:
-     *
-     * class A { private String s = 's'; def f() { { -> s }() } }
-     * class B extends A { }
-     *
-     * new A().f() // returns s
-     * new B().f() // No such property: s for class: B
-     */
-    List<String> _headers = []
+	/* Groovy has an odd preference to use fields directly in a way
+	 * that breaks property overrides:
+	 *
+	 * class A { String f = 'f'; def getK() { this.f } }
+	 * class B extends A { String getF() { 'g' } }
+	 * b = new B()
+	 * b.f // returns g
+	 * b.k // returns f
+	 *
+	 * So use _headers instead
+	 *
+	 * And it has to be public:
+	 *
+	 * class A { private String s = 's'; def f() { { -> s }() } }
+	 * class B extends A { }
+	 *
+	 * new A().f() // returns s
+	 * new B().f() // No such property: s for class: B
+	 */
+	List<String> _headers = []
 
-    @Override
-    protected List<String> getHeaders() {
-        prepareResult()
-        _headers
-    }
+	@Override
+	protected List<String> getHeaders() {
+		prepareResult()
+		_headers
+	}
 
-    private void prepareResult() {
-        if (preResults != null) {
-            return
-        }
+	private void prepareResult() {
+		if (preResults != null) {
+			return
+		}
 
-        preResults = Iterators.peekingIterator(table.result.iterator())
-        if (!preResults.hasNext()) {
-            throw new EmptySetException("The result set is empty. " +
-                    "Number of patients dropped owing to mismatched " +
-                    "data: ${table.droppedRows}")
-        }
+		preResults = Iterators.peekingIterator(table.result.iterator())
+		if (!preResults.hasNext()) {
+			throw new EmptySetException(
+					'The result set is empty. Number of patients dropped owing to mismatched data: ' +
+							table.droppedRows)
+		}
 
-        def originalHeaders = table.headers
-        def firstLine = preResults.peek()
+		List<String> originalHeaders = table.headers
+		preResults.peek().eachWithIndex { it, int index ->
+			_headers << originalHeaders[index]
 
-        firstLine.eachWithIndex { it, index ->
-            _headers << originalHeaders[index]
+			if (it instanceof Map) {
+				transformedColumnsIndexes << index
+				addGroupColumnHeaders(_headers)
+			}
+		}
+	}
 
-            if (it instanceof Map) {
-                transformedColumnsIndexes << index
-                addGroupColumnHeaders(_headers)
-            }
-        }
-    }
+	protected void addGroupColumnHeaders(List<String> headerList) {
+		if (transformedColumnsIndexes.size() == 1) {
+			headerList << 'GROUP'
+		}
+		else {
+			headerList << 'GROUP.' + (transformedColumnsIndexes.size() - 1)
+		}
+	}
 
-    protected void addGroupColumnHeaders(List<String> headerList) {
-        if (transformedColumnsIndexes.size() == 1) {
-            headerList << 'GROUP'
-        } else {
-            headerList << "GROUP.${transformedColumnsIndexes.size() - 1}".toString()
-        }
-    }
+	protected Iterator getMainRows() {
+		prepareResult()
+		if (transformedColumnsIndexes.empty) {
+			super.getMainRows()
+		}
+		else {
+			createDecoratingIterator()
+		}
+	}
 
-    protected Iterator getMainRows() {
-        prepareResult()
-        if (transformedColumnsIndexes.empty) {
-            super.getMainRows()
-        } else {
-            createDecoratingIterator()
-        }
-    }
-
-    protected createDecoratingIterator() {
-        new ExpandingMapIterator(preResults, transformedColumnsIndexes)
-    }
+	protected createDecoratingIterator() {
+		new ExpandingMapIterator(preResults, transformedColumnsIndexes)
+	}
 }

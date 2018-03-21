@@ -9,22 +9,22 @@ import jobs.steps.helpers.GroupNamesHolder
  */
 class CorrelationAnalysisDumpDataStep extends SimpleDumpTableResultStep {
 
-    GroupNamesHolder groupNamesHolder
+	GroupNamesHolder groupNamesHolder
 
-    private List<String> getVariableNames() {
-        groupNamesHolder.groupNames
-    }
+	private List<String> getVariableNames() {
+		groupNamesHolder.groupNames
+	}
 
-    @Override
-    protected List<String> getHeaders() {
-        variableNames
-    }
+	@Override
+	protected List<String> getHeaders() {
+		variableNames
+	}
 
-    @Override
-    protected Iterator getMainRows() {
-        Iterators.transform(table.result.iterator(), {
-            Map<String, Object> currentMap = it[0]
-            variableNames.collect { currentMap[it] }
-        } as Function)
-    }
+	@Override
+	protected Iterator getMainRows() {
+		Iterators.transform(table.result.iterator(), {
+			Map<String, Object> currentMap = it[0]
+			variableNames.collect { currentMap[it] }
+		} as Function)
+	}
 }

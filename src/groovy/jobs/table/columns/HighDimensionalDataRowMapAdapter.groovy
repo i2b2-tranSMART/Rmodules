@@ -17,38 +17,36 @@ import org.transmartproject.core.dataquery.highdim.AssayColumn
 @CompileStatic
 class HighDimensionalDataRowMapAdapter extends ForwardingMap<String, Map<String, Object>> {
 
-    Map<String, Map<String, Object>> innerMap
+	Map<String, Map<String, Object>> innerMap
 
-    HighDimensionalDataRowMapAdapter(List<AssayColumn> assays,
-                                     DataRow<AssayColumn, ?> row,
-                                     String contextPrepend = '') {
+	HighDimensionalDataRowMapAdapter(List<AssayColumn> assays,
+	                                 DataRow<AssayColumn, ?> row,
+	                                 String contextPrepend = '') {
 
-        /* empty cells are dropped!
-         * In the future we may want to provide a MissingValueAction
-         * to this class in order to customize this behavior */
-        Map<String, AssayColumn> patientIdtoAssay =
-                Maps.uniqueIndex(assays,
-                        { AssayColumn assay ->
-                            assay.patientInTrialId
-                        } as Function)
+		/* empty cells are dropped!
+		 * In the future we may want to provide a MissingValueAction
+		 * to this class in order to customize this behavior */
+		Map<String, AssayColumn> patientIdtoAssay = Maps.uniqueIndex(assays,
+				{ AssayColumn assay ->
+					assay.patientInTrialId
+				} as Function)
 
-        Map<String, Map<String, Object> /* one entry */> patientIdToDataValue =
-                Maps.transformValues patientIdtoAssay,
-                        { AssayColumn assay ->
-                            def value = row.getAt(assay)
-                            if (value == null) {
-                                return null
-                            }
-                            ImmutableMap.of(contextPrepend + row.label, value)
-                        } as Function
+		Map<String, Map<String, Object> /* one entry */> patientIdToDataValue =
+				Maps.transformValues patientIdtoAssay,
+						{ AssayColumn assay ->
+							def value = row.getAt(assay)
+							if (value == null) {
+								return null
+							}
+							ImmutableMap.of(contextPrepend + row.label, value)
+						} as Function
 
-        // drop nulls
-        innerMap = Maps.filterValues patientIdToDataValue,
-                { Object value -> value != null } as Predicate
-    }
+		// drop nulls
+		innerMap = Maps.filterValues patientIdToDataValue, { it != null } as Predicate
+	}
 
-    @Override
-    protected Map<String, Map<String, Object>> delegate() {
-        innerMap
-    }
+	@Override
+	protected Map<String, Map<String, Object>> delegate() {
+		innerMap
+	}
 }

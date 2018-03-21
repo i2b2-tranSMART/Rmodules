@@ -9,51 +9,53 @@ import org.transmartproject.core.exceptions.InvalidArgumentsException
 @CompileStatic
 class SimpleConceptVariableColumn extends AbstractColumn {
 
-    ClinicalVariableColumn column
+	ClinicalVariableColumn column
 
-    /* only accept numeric values */
-    boolean numbersOnly
+	/* only accept numeric values */
+	boolean numbersOnly
 
-    private PatientRow lastRow
+	private PatientRow lastRow
 
-    @Override
-    void onReadRow(String dataSourceName, Object row) {
-        /* calls to onReadRow() are guaranteed to be called interleaved with
-         * consumeResultingTableRow */
-        assert lastRow == null
-        assert row instanceof PatientRow
+	@Override
+	void onReadRow(String dataSourceName, row) {
+		/* calls to onReadRow() are guaranteed to be called interleaved with
+		 * consumeResultingTableRow */
+		assert lastRow == null
+		assert row instanceof PatientRow
 
-        lastRow = (PatientRow) row
-    }
+		lastRow = (PatientRow) row
+	}
 
-    @Override
-    Map<String, Object> consumeResultingTableRows() {
-        if (!lastRow) return ImmutableMap.of()
+	@Override
+	Map<String, Object> consumeResultingTableRows() {
+		if (!lastRow) {
+			return ImmutableMap.of()
+		}
 
-        def cellValue = lastRow.getAt(column)
-        def res
+		def cellValue = lastRow.getAt(column)
+		def res
 
-        if (cellValue != null) {
-            if (numbersOnly) {
-                validateNumber column, cellValue
-            }
-            res = ImmutableMap.of(getPrimaryKey(lastRow), cellValue)
-        } else {
-            res = ImmutableMap.of()
-        }
+		if (cellValue != null) {
+			if (numbersOnly) {
+				validateNumber column, cellValue
+			}
+			res = ImmutableMap.of(getPrimaryKey(lastRow), cellValue)
+		}
+		else {
+			res = ImmutableMap.of()
+		}
 
-        lastRow = null
-        res
-    }
+		lastRow = null
+		res
+	}
 
-    protected String getPrimaryKey(PatientRow row) {
-        lastRow.patient.inTrialId
-    }
+	protected String getPrimaryKey(PatientRow row) {
+		lastRow.patient.inTrialId
+	}
 
-    private void validateNumber(ClinicalVariableColumn col, Object value) {
-        if (!(value instanceof Number)) {
-            throw new InvalidArgumentsException(
-                    "Got non-numerical value for column $col; value was $value")
-        }
-    }
+	private void validateNumber(ClinicalVariableColumn col, value) {
+		if (!(value instanceof Number)) {
+			throw new InvalidArgumentsException("Got non-numerical value for column $col; value was $value")
+		}
+	}
 }

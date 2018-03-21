@@ -9,115 +9,100 @@ import org.transmartproject.core.ontology.ConceptsResource
 import org.transmartproject.core.ontology.OntologyTerm
 
 /**
- * Created by carlos on 1/31/14.
+ * @author carlos
  */
 @TestMixin(GrailsUnitTestMixin)
 class ConceptTimeValuesTableTest extends GMockTestCase {
 
-    ConceptTimeValuesTable table
+	ConceptTimeValuesTable table
 
-    ConceptsResource conceptsResource
+	ConceptsResource conceptsResource
 
-    String path1 = "\\foo\\"
-    String path2 = "\\bar\\"
+	String path1 = "\\foo\\"
+	String path2 = "\\bar\\"
 
-    @Before
-    void setUp() {
-        table = new ConceptTimeValuesTable()
-        conceptsResource = mock(ConceptsResource)
-        table.conceptsResource = conceptsResource
-        table.conceptPaths = [] //concept paths starts empty, and will be filled by each test
-    }
+	@Before
+	void setUp() {
+		table = new ConceptTimeValuesTable()
+		conceptsResource = mock(ConceptsResource)
+		table.conceptsResource = conceptsResource
+		table.conceptPaths = [] //concept paths starts empty, and will be filled by each test
+	}
 
-    @Test
-    void testSuccessWith2Concepts() {
+	@Test
+	void testSuccessWith2Concepts() {
 
-        String unit = 'days'
-        OntologyTerm ot1 = setConceptResourceKeyExpect(path1, unit, '1')
-        OntologyTerm ot2 = setConceptResourceKeyExpect(path2, unit, '2')
+		String unit = 'days'
+		OntologyTerm ot1 = setConceptResourceKeyExpect(path1, unit, '1')
+		OntologyTerm ot2 = setConceptResourceKeyExpect(path2, unit, '2')
 
-        play {
-            Map<String,Map> result = table.resultMap
-            assertNotNull result
+		play {
+			Map<String, Map> result = table.resultMap
+			assertNotNull result
 
-            assertEquals table.conceptPaths.size(), result.size()
-            assertHasScalingEntry(result, ot1)
-            assertHasScalingEntry(result, ot2)
-        }
-    }
+			assertEquals table.conceptPaths.size(), result.size()
+			assertHasScalingEntry(result, ot1)
+			assertHasScalingEntry(result, ot2)
+		}
+	}
 
-    @Test
-    void testFailNoCommonUnit() {
+	@Test
+	void testFailNoCommonUnit() {
+		OntologyTerm ot1 = setConceptResourceKeyExpect(path1, 'days', '1')
+		OntologyTerm ot2 = setConceptResourceKeyExpect(path2, 'weeks', '2')
+		assertNoResult()
+	}
 
-        OntologyTerm ot1 = setConceptResourceKeyExpect(path1, 'days', '1')
-        OntologyTerm ot2 = setConceptResourceKeyExpect(path2, 'weeks', '2')
-        assertNoResult()
-    }
+	@Test
+	void testFailWithNonNumericValue() {
+		OntologyTerm ot = setConceptResourceKeyExpect(path1, 'unit', 'string')
+		assertNoResult()
+	}
 
-    @Test
-    void testFailWithNonNumericValue() {
+	@Test
+	void testFailWithoutMetadata() {
+		OntologyTerm ot1 = setConceptResourceKeyExpect(path1, null)
+		assertNoResult()
+	}
 
-        OntologyTerm ot = setConceptResourceKeyExpect(path1, 'unit', 'string')
-        assertNoResult()
-    }
+	private void assertNoResult() {
+		play {
+			assertNull table.resultMap
+		}
+	}
 
-    @Test
-    void testFailWithoutMetadata() {
+	/**
+	 * Creates a OntologyTerm mock with metadata, setting all the necessary expectations
+	 */
+	private OntologyTerm setConceptResourceKeyExpect(String path, String unit, String value) {
+		setConceptResourceKeyExpect(path, createMetadata(unit, value))
+	}
 
-        OntologyTerm ot1 = setConceptResourceKeyExpect(path1, null)
-        assertNoResult()
-    }
+	private void assertHasScalingEntry(Map map, OntologyTerm ot) {
+		Map expected = ot.getMetadata().seriesMeta
+		Map actual = map.get(ot.getFullName())
+		assertNotNull actual
+		assertEquals expected, actual
+	}
 
-    private void assertNoResult() {
-        play {
-            assertNull table.resultMap
-        }
-    }
+	private OntologyTerm setConceptResourceKeyExpect(String path, Map metadata) {
+		table.conceptPaths << path
 
-    /**
-     * Creates a OntologyTerm mock with metadata, setting all the necessary expectations
-     * @param path
-     * @param unit
-     * @param value
-     * @return
-     */
-    private OntologyTerm setConceptResourceKeyExpect(String path, String unit, String value) {
-        setConceptResourceKeyExpect(path, createMetadata(unit, value))
-    }
+		String fullname = "$path fullname"
+		OntologyTerm ot = createMockOntologyTerm(fullname, metadata)
+		String key = ConceptTimeValuesTable.getConceptKey(path)
+		conceptsResource.getByKey(key).returns(ot).stub()
+		ot
+	}
 
-    private void assertHasScalingEntry(Map map, OntologyTerm ot) {
-        Map expected = ot.getMetadata().seriesMeta
-        Map actual = map.get(ot.getFullName())
-        assertNotNull actual
-        assertEquals expected, actual
-    }
+	private Map createMetadata(String unit, String value) {
+		[seriesMeta: [unit : unit, value: value, label: "label for $value $unit"]]
+	}
 
-    private OntologyTerm setConceptResourceKeyExpect(String path, Map metadata) {
-        table.conceptPaths << path
-
-        String fullname = "$path fullname"
-        OntologyTerm ot = createMockOntologyTerm(fullname, metadata)
-        String key = ConceptTimeValuesTable.getConceptKey(path)
-        conceptsResource.getByKey(key).returns(ot).stub()
-        ot
-    }
-
-    private Map createMetadata(String unit, String value) {
-        [
-            seriesMeta: [
-                    "unit": unit,
-                    "value": value,
-                    "label": "label for $value $unit",
-            ]
-        ]
-    }
-
-    private OntologyTerm createMockOntologyTerm(String fullname, Map metadata) {
-
-        OntologyTerm ot = mock(OntologyTerm)
-        ot.fullName.returns(fullname).stub()
-        ot.metadata.returns(metadata).stub()
-        ot
-    }
-
+	private OntologyTerm createMockOntologyTerm(String fullname, Map metadata) {
+		OntologyTerm ot = mock(OntologyTerm)
+		ot.fullName.returns(fullname).stub()
+		ot.metadata.returns(metadata).stub()
+		ot
+	}
 }

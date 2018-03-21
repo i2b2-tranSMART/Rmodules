@@ -11,41 +11,37 @@ import org.springframework.stereotype.Component
 @Scope('job')
 class Geneprint extends HighDimensionalOnlyJob {
 
+	@Override
+	protected List<Step> prepareSteps() {
+		List<Step> steps = []
 
-    @Override
-    protected List<Step> prepareSteps() {
-        List<Step> steps = []
+		steps << new ParametersFileStep(
+				temporaryDirectory: temporaryDirectory,
+				params: params)
 
-        steps << new ParametersFileStep(
-                temporaryDirectory: temporaryDirectory,
-                params: params)
+		steps << new OpenHighDimensionalDataStep(
+				params: params,
+				dataTypeResource: highDimensionResource.getSubResourceForType(analysisConstraints['data_type']),
+				analysisConstraints: analysisConstraints)
 
-        def openResultSetStep = new OpenHighDimensionalDataStep(
-                params: params,
-                dataTypeResource: highDimensionResource.getSubResourceForType(analysisConstraints['data_type']),
-                analysisConstraints: analysisConstraints)
+		steps
+	}
 
-        steps << openResultSetStep
+	@Override
+	protected Step createDumpHighDimensionDataStep(Closure resultsHolder) {
+		new ValueGroupDumpDataStep(
+				temporaryDirectory: temporaryDirectory,
+				resultsHolder: resultsHolder,
+				params: params)
+	}
 
-        steps
-    }
+	@Override
+	protected List<String> getRStatements() {
+		[]
+	}
 
-    @Override
-    protected Step createDumpHighDimensionDataStep(Closure resultsHolder) {
-        new ValueGroupDumpDataStep(
-                temporaryDirectory: temporaryDirectory,
-                resultsHolder: resultsHolder,
-                params: params)
-    }
-
-    @Override
-    protected List<String> getRStatements() {
-        []
-    }
-
-    @Override
-    protected getForwardPath() {
-        "/Geneprint/geneprintOut?jobName=${name}"
-    }
-
+	@Override
+	protected String getForwardPath() {
+		"/Geneprint/geneprintOut?jobName=${name}"
+	}
 }

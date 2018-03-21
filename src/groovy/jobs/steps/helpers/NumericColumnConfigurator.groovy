@@ -12,91 +12,91 @@ import org.transmartproject.core.dataquery.clinical.ClinicalVariable
 @Scope('prototype')
 class NumericColumnConfigurator extends ColumnConfigurator {
 
-    public static final String CLINICAL_DATA_TYPE_VALUE = 'CLINICAL'
+	private static final List<String> propertyNames = ['header', 'projection', 'keyForConceptPath',
+	                                                   'keyForDataType', 'keyForSearchKeywordId', 'multiRow'].asImmutable()
 
-    String projection             /* only applicable for high dim data */
+	public static final String CLINICAL_DATA_TYPE_VALUE = 'CLINICAL'
 
-    String keyForConceptPath,
-           keyForDataType,        /* CLINICAL for clinical data */
-           keyForSearchKeywordId, /* only applicable for high dim data */
-           keyForLog10
+	String projection // only applicable for high dim data
 
-    boolean multiRow = false      /* only applicable for high dim data */
+	String keyForConceptPath
+	String keyForDataType // CLINICAL for clinical data
+	String keyForSearchKeywordId // only applicable for high dim data
+	String keyForLog10
 
-    boolean alwaysClinical = false
+	boolean multiRow = false // only applicable for high dim data
 
-    @Autowired
-    private ClinicalDataRetriever clinicalDataRetriever
+	boolean alwaysClinical = false
 
-    @Autowired
-    private ResultInstanceIdsHolder resultInstanceIdsHolder
+	@Autowired
+	private ClinicalDataRetriever clinicalDataRetriever
 
-    @Autowired
-    private HighDimensionColumnConfigurator highDimensionColumnConfigurator
+	@Autowired
+	private ResultInstanceIdsHolder resultInstanceIdsHolder
 
-    @Override
-    protected void doAddColumn(Closure<Column> columnDecorator) {
-        def resultColumnDecoretor = log10 ?
-                compose(columnDecorator, createLog10ColumnDecorator())
-                : columnDecorator
-        if (isClinical()) {
-            addColumnClinical resultColumnDecoretor
-        } else {
-            addColumnHighDim resultColumnDecoretor
-        }
-    }
+	@Autowired
+	private HighDimensionColumnConfigurator highDimensionColumnConfigurator
 
-    private Closure<Column> createLog10ColumnDecorator() {
-        { Column originalColumn ->
-            new TransformColumnDecorator(
-                    inner: originalColumn,
-                    valueFunction: { value ->
-                        Math.log10(value)
-                    })
-        }
-    }
+	@Override
+	protected void doAddColumn(Closure<Column> columnDecorator) {
+		def resultColumnDecoretor = log10 ?
+				compose(columnDecorator, createLog10ColumnDecorator()) :
+				columnDecorator
+		if (isClinical()) {
+			addColumnClinical resultColumnDecoretor
+		}
+		else {
+			addColumnHighDim resultColumnDecoretor
+		}
+	}
 
-    boolean isLog10() {
-        getStringParam(keyForLog10, false)?.toBoolean()
-    }
+	private Closure<Column> createLog10ColumnDecorator() {
+		{ Column originalColumn ->
+			new TransformColumnDecorator(
+					inner: originalColumn,
+					valueFunction: { value -> Math.log10(value) })
+		}
+	}
 
-    boolean isClinical() {
-        return alwaysClinical || getStringParam(keyForDataType) == CLINICAL_DATA_TYPE_VALUE
-    }
+	boolean isLog10() {
+		getStringParam keyForLog10, false
+	}
 
-    private void addColumnHighDim(Closure<Column> decorateColumn) {
-        ['header', 'projection', 'keyForConceptPath', 'keyForDataType',
-                'keyForSearchKeywordId', 'multiRow'].each { prop ->
-            highDimensionColumnConfigurator."$prop" = this."$prop"
-        }
-        highDimensionColumnConfigurator.addColumn decorateColumn
-    }
+	boolean isClinical() {
+		alwaysClinical || getStringParam(keyForDataType) == CLINICAL_DATA_TYPE_VALUE
+	}
 
-    private void addColumnClinical(Closure<Column> decorateColumn) {
-        ClinicalVariable variable = clinicalDataRetriever.
-                createVariableFromConceptPath getStringParam(keyForConceptPath).trim()
-        variable = clinicalDataRetriever << variable
+	private void addColumnHighDim(Closure<Column> decorateColumn) {
+		for (prop in propertyNames) {
+			highDimensionColumnConfigurator[prop] = this[prop]
+		}
+		highDimensionColumnConfigurator.addColumn decorateColumn
+	}
 
-        clinicalDataRetriever.attachToTable table
+	private void addColumnClinical(Closure<Column> decorateColumn) {
+		ClinicalVariable variable = clinicalDataRetriever.createVariableFromConceptPath getStringParam(keyForConceptPath).trim()
+		variable = clinicalDataRetriever << variable
 
-        table.addColumn(
-                decorateColumn.call(
-                        new SimpleConceptVariableColumn(
-                                column:      variable,
-                                numbersOnly: true,
-                                header:      header)),
-                [ClinicalDataRetriever.DATA_SOURCE_NAME] as Set)
-    }
+		clinicalDataRetriever.attachToTable table
 
-    /**
-     * Sets parameter keys based on optional base key part
-     * @param keyPart
-     */
-    void setKeys(String keyPart = '') {
-        keyForConceptPath     = "${keyPart}Variable"
-        keyForDataType        = "div${keyPart.capitalize()}VariableType"
-        keyForSearchKeywordId = "div${keyPart.capitalize()}VariablePathway"
-        keyForLog10           = "div${keyPart.capitalize()}VariableLog10"
-    }
+		table.addColumn(
+				decorateColumn.call(
+						new SimpleConceptVariableColumn(
+								column:      variable,
+								numbersOnly: true,
+								header:      header)),
+				[ClinicalDataRetriever.DATA_SOURCE_NAME] as Set)
+	}
 
+	/**
+	 * Sets parameter keys based on optional base key part
+	 * @param keyPart
+	 */
+	void setKeys(String keyPart = '') {
+		String cap = keyPart.capitalize()
+		keyForConceptPath     = keyPart + 'Variable'
+		keyForDataType        = 'div' + cap + 'VariableType'
+		keyForSearchKeywordId = 'div' + cap + 'VariablePathway'
+		keyForLog10           = 'div' + cap + 'VariableLog10'
+	}
 }

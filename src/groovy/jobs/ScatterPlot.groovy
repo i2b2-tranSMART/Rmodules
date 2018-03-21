@@ -1,6 +1,10 @@
 package jobs
 
-import jobs.steps.*
+import groovy.transform.CompileStatic
+import jobs.steps.BuildTableResultStep
+import jobs.steps.MultiRowAsGroupDumpTableResultsStep
+import jobs.steps.RCommandsStep
+import jobs.steps.Step
 import jobs.steps.helpers.NumericColumnConfigurator
 import jobs.steps.helpers.SimpleAddColumnConfigurator
 import jobs.table.Table
@@ -15,89 +19,85 @@ import java.security.InvalidParameterException
 
 import static jobs.steps.AbstractDumpStep.DEFAULT_OUTPUT_FILE_NAME
 
+@CompileStatic
 @Component
 @Scope('job')
 class ScatterPlot extends AbstractAnalysisJob {
 
-    @Autowired
-    SimpleAddColumnConfigurator primaryKeyColumnConfigurator
+	@Autowired
+	SimpleAddColumnConfigurator primaryKeyColumnConfigurator
 
-    @Autowired
-    NumericColumnConfigurator independentVariableConfigurator
+	@Autowired
+	NumericColumnConfigurator independentVariableConfigurator
 
-    @Autowired
-    NumericColumnConfigurator dependentVariableConfigurator
+	@Autowired
+	NumericColumnConfigurator dependentVariableConfigurator
 
-    @Autowired
-    Table table
+	@Autowired
+	Table table
 
-    @PostConstruct
-    void init() {
-        primaryKeyColumnConfigurator.column =
-                new PrimaryKeyColumn(header: 'PATIENT_NUM')
+	@PostConstruct
+	void init() {
+		primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
 
-        configureConfigurator independentVariableConfigurator, 'independent', 'X'
-        configureConfigurator dependentVariableConfigurator,   'dependent',   'Y'
+		configureConfigurator independentVariableConfigurator, 'independent', 'X'
+		configureConfigurator dependentVariableConfigurator, 'dependent', 'Y'
 
-        /* we also need these two extra variables (see R statements) */
-        extraParamValidation()
-    }
+		// we also need these two extra variables (see R statements)
+		extraParamValidation()
+	}
 
-    private void extraParamValidation() {
-        if (params['divIndependentVariablePathway'] != null) {
-            if (params['divIndependentPathwayName'] == null) {
-                throw new InvalidParameterException(
-                        'Missing user parameter "divIndependentPathwayName"')
-            }
-        }
+	private void extraParamValidation() {
+		if (params['divIndependentVariablePathway'] != null) {
+			if (params['divIndependentPathwayName'] == null) {
+				throw new InvalidParameterException('Missing user parameter "divIndependentPathwayName"')
+			}
+		}
 
-        if (params['divDependentVariablePathway'] != null) {
-            if (params['divDependentPathwayName'] == null) {
-                throw new InvalidParameterException(
-                        'Missing user parameter "divDependentPathwayName"')
-            }
-        }
-    }
+		if (params['divDependentVariablePathway'] != null) {
+			if (params['divDependentPathwayName'] == null) {
+				throw new InvalidParameterException('Missing user parameter "divDependentPathwayName"')
+			}
+		}
+	}
 
-    private void configureConfigurator(NumericColumnConfigurator configurator,
-                                       String key,
-                                       String header) {
-        configurator.header     = header
-        configurator.projection = Projection.LOG_INTENSITY_PROJECTION
-        configurator.multiRow   = true
-        configurator.setKeys(key)
-    }
+	private void configureConfigurator(NumericColumnConfigurator configurator, String key, String header) {
+		configurator.header = header
+		configurator.projection = Projection.LOG_INTENSITY_PROJECTION
+		configurator.multiRow = true
+		configurator.setKeys(key)
+	}
 
-    @Override
-    protected List<Step> prepareSteps() {
-        List<Step> steps = []
+	@Override
+	protected List<Step> prepareSteps() {
+		List<Step> steps = []
 
-        steps << new BuildTableResultStep(
-                table:         table,
-                configurators: [primaryKeyColumnConfigurator,
-                        independentVariableConfigurator,
-                        dependentVariableConfigurator,])
+		steps << new BuildTableResultStep(
+				table: table,
+				configurators: [primaryKeyColumnConfigurator,
+				                independentVariableConfigurator,
+				                dependentVariableConfigurator,])
 
-        steps << new MultiRowAsGroupDumpTableResultsStep(
-                table:              table,
-                temporaryDirectory: temporaryDirectory,
-                outputFileName: DEFAULT_OUTPUT_FILE_NAME)
+		steps << new MultiRowAsGroupDumpTableResultsStep(
+				table: table,
+				temporaryDirectory: temporaryDirectory,
+				outputFileName: DEFAULT_OUTPUT_FILE_NAME)
 
-        steps << new RCommandsStep(
-                temporaryDirectory: temporaryDirectory,
-                scriptsDirectory:   scriptsDirectory,
-                rStatements:        RStatements,
-                studyName:          studyName,
-                params:             params,
-                extraParams: [inputFileName: DEFAULT_OUTPUT_FILE_NAME])
+		steps << new RCommandsStep(
+				temporaryDirectory: temporaryDirectory,
+				scriptsDirectory: scriptsDirectory,
+				rStatements: RStatements,
+				studyName: studyName,
+				params: params,
+				extraParams: [inputFileName: DEFAULT_OUTPUT_FILE_NAME])
 
-        steps
-    }
+		steps
+	}
 
-    @Override
-    protected List<String> getRStatements() {
-        [ '''source('$pluginDirectory/ScatterPlot/ScatterPlotLoader.R')''',
-                '''ScatterPlot.loader(
+	@Override
+	protected List<String> getRStatements() {
+		['''source('$pluginDirectory/ScatterPlot/ScatterPlotLoader.R')''',
+		 '''ScatterPlot.loader(
                     input.filename               = '$inputFileName',
                     concept.dependent            = '$dependentVariable',
                     concept.independent          = '$independentVariable',
@@ -109,11 +109,11 @@ class ScatterPlot extends AbstractAnalysisJob {
                     aggregate.probes.dependent   = '$divDependentVariableprobesAggregation'   == 'true',
                     snptype.dependent            = '',
                     snptype.independent          = '',
-        )''' ] // last two params should be removed
-    }
+        )'''] // last two params should be removed
+	}
 
-    @Override
-    protected getForwardPath() {
-        "/scatterPlot/scatterPlotOut?jobName=$name"
-    }
+	@Override
+	protected String getForwardPath() {
+		"/scatterPlot/scatterPlotOut?jobName=$name"
+	}
 }

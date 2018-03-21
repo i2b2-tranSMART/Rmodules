@@ -15,30 +15,31 @@ import org.transmartproject.core.dataquery.clinical.PatientRow
 @CompileStatic
 class CategoricalVariableColumn extends AbstractColumn {
 
-    Set<ClinicalVariableColumn> leafNodes
+	Set<ClinicalVariableColumn> leafNodes
 
-    PatientRow lastRow
+	PatientRow lastRow
 
-    @Override
-    void onReadRow(String dataSourceName, Object row) {
-        lastRow = (PatientRow) row
-    }
+	@Override
+	void onReadRow(String dataSourceName, row) {
+		lastRow = (PatientRow) row
+	}
 
-    @Override
-    Map<String, Object> consumeResultingTableRows() {
-        if (!lastRow) return ImmutableMap.of()
+	@Override
+	Map<String, Object> consumeResultingTableRows() {
+		if (!lastRow) {
+			return ImmutableMap.of()
+		}
 
-        for (clinicalVariable in leafNodes) {
-            if (lastRow.getAt(clinicalVariable)) {
-                return ImmutableMap.of(getPrimaryKey(lastRow),
-                                       lastRow.getAt(clinicalVariable))
-            }
-        }
+		for (clinicalVariable in leafNodes) {
+			if (lastRow.getAt(clinicalVariable)) {
+				return ImmutableMap.of(getPrimaryKey(lastRow), lastRow.getAt(clinicalVariable))
+			}
+		}
 
-        ImmutableMap.of()
-    }
+		ImmutableMap.of()
+	}
 
-    protected String getPrimaryKey(PatientRow row) {
-        lastRow.patient.inTrialId
-    }
+	protected String getPrimaryKey(PatientRow ignored) {
+		lastRow.patient.inTrialId
+	}
 }

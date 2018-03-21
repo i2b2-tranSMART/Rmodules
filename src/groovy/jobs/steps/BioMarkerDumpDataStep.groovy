@@ -6,25 +6,17 @@ import org.transmartproject.core.dataquery.highdim.BioMarkerDataRow
 
 class BioMarkerDumpDataStep extends AbstractDumpHighDimensionalDataStep {
 
-    @Override
-    protected computeCsvRow(String subsetName,
-                            String seriesName,
-                            DataRow row,
-                            AssayColumn column,
-                            Object cell) {
+	final List<String> csvHeader = ['PATIENT.ID', 'VALUE', 'PROBE.ID', 'GENE_SYMBOL', 'SUBSET']
 
-        assert row instanceof BioMarkerDataRow
+	@Override
+	protected computeCsvRow(String subsetName, String seriesName, DataRow row, AssayColumn column, cell) {
 
-        [
-                getRowKey(subsetName, seriesName, column.patientInTrialId),
-                row[column],
-                row.label,
-                row.bioMarker,
-                subsetName
-        ]
-    }
+		assert row instanceof BioMarkerDataRow
 
-    final List<String> csvHeader =
-        [ 'PATIENT.ID', 'VALUE', 'PROBE.ID', 'GENE_SYMBOL', 'SUBSET' ]
-
+		[getRowKey(subsetName, seriesName, column.patientInTrialId),
+		 row[column],
+		 row.label,
+		 row.bioMarker,
+		 subsetName]
+	}
 }

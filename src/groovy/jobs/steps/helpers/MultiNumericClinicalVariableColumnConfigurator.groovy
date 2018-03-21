@@ -7,55 +7,51 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
 import org.transmartproject.core.dataquery.clinical.ClinicalVariableColumn
-import org.transmartproject.utils.ConceptUtils
 
 @Component
 @Scope('prototype')
 class MultiNumericClinicalVariableColumnConfigurator extends ColumnConfigurator {
 
-    String keyForConceptPaths
+	String keyForConceptPaths
 
-    GroupNamesHolder groupNamesHolder
+	GroupNamesHolder groupNamesHolder
 
-    @Autowired
-    private ClinicalDataRetriever clinicalDataRetriever
+	@Autowired
+	private ClinicalDataRetriever clinicalDataRetriever
 
-    @Autowired
-    private ResultInstanceIdsHolder resultInstanceIdsHolder
+	@Autowired
+	private ResultInstanceIdsHolder resultInstanceIdsHolder
 
-    @Override
-    protected void doAddColumn(Closure<Column> decorateColumn) {
+	@Override
+	protected void doAddColumn(Closure<Column> decorateColumn) {
 
-        List<String> variables = getConceptPaths().collect {
-            clinicalDataRetriever.createVariableFromConceptPath it
-        }
+		List<String> variables = getConceptPaths().collect {
+			clinicalDataRetriever.createVariableFromConceptPath it
+		}
 
-        variables = variables.collect {
-            clinicalDataRetriever << it
-        }
+		variables = variables.collect { clinicalDataRetriever << it }
 
-        clinicalDataRetriever.attachToTable table
+		clinicalDataRetriever.attachToTable table
 
-        Map<ClinicalVariableColumn, String> variableToGroupName =
-                Functions.inner(variables,
-                        conceptPaths,
-                        { a, b -> [a,b]}).
-                        collectEntries()
+		Map<ClinicalVariableColumn, String> variableToGroupName =
+				Functions.inner(variables,
+						conceptPaths,
+						{ a, b -> [a, b] }).
+						collectEntries()
 
-        if (groupNamesHolder) {
-            groupNamesHolder.groupNames = variableToGroupName.values() as List
-        }
+		if (groupNamesHolder) {
+			groupNamesHolder.groupNames = variableToGroupName.values() as List
+		}
 
-        table.addColumn(
-                decorateColumn.call(
-                        new MultiNumericClinicalVariableColumn(
-                                clinicalVariables: variableToGroupName,
-                                header:            header)),
-                [ClinicalDataRetriever.DATA_SOURCE_NAME] as Set)
-    }
+		table.addColumn(
+				decorateColumn.call(
+						new MultiNumericClinicalVariableColumn(
+								clinicalVariables: variableToGroupName,
+								header: header)),
+				[ClinicalDataRetriever.DATA_SOURCE_NAME] as Set)
+	}
 
-    public List<String> getConceptPaths() {
-        getStringParam(keyForConceptPaths).split(/\|/) as List
-    }
-
+	List<String> getConceptPaths() {
+		getStringParam(keyForConceptPaths).split(/\|/)
+	}
 }

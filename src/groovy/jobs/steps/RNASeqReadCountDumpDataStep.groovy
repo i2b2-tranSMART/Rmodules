@@ -8,44 +8,35 @@ import org.transmartproject.core.dataquery.highdim.rnaseq.RnaSeqValues
 
 class RNASeqReadCountDumpDataStep extends AbstractDumpHighDimensionalDataStep {
 
-    RNASeqReadCountDumpDataStep() {
-        callPerColumn = false
-    }
+	RNASeqReadCountDumpDataStep() {
+		callPerColumn = false
+	}
 
-    @Override
-    protected computeCsvRow(String subsetName,
-                            String seriesName,
-                            DataRow genericRow,
-                            AssayColumn column /* null */,
-                            Object cell /* null */) {
+	@Override
+	protected computeCsvRow(String subsetName, String seriesName, DataRow genericRow, AssayColumn column /*null*/, cell /*null*/) {
 
-        RegionRow<RnaSeqValues> row = genericRow
-        def line = Lists.newArrayListWithCapacity(csvHeader.size())
-        line[0] = row.bioMarker ?: row.name as String
+		RegionRow<RnaSeqValues> row = genericRow
+		List<String> line = Lists.newArrayListWithCapacity(csvHeader.size())
+		line << (row.bioMarker ?: row.name) as String
 
-        int j = 1
+		for (AssayColumn assay in assays) {
+			line << row.getAt(assay).readcount as String
+		}
 
-        assays.each { AssayColumn assay ->
-            line[j++] = row.getAt(assay).readcount as String
-        }
+		line
+	}
 
-        line
-    }
+	@Lazy List<String> csvHeader = {
+		List<String> r = ['regionname']
 
-    @Lazy List<String> csvHeader = {
-        List<String> r = [
-                'regionname',
-        ];
+		for (AssayColumn assay in assays) {
+			r << assay.patientInTrialId
+		}
 
-        assays.each { AssayColumn assay ->
-            r << assay.patientInTrialId
-        }
+		r
+	}()
 
-        r
-    }()
-
-    @Lazy def assays = {
-        results.values().iterator().next().indicesList
-    }()
-
+	@Lazy List<AssayColumn> assays = {
+		results.values().iterator().next().indicesList
+	}()
 }

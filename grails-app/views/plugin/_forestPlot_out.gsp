@@ -18,96 +18,76 @@
 <html>
 <head>
 <title>subsetPanel.html</title>
-
 <meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
 <meta http-equiv="description" content="this is my page">
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
-<link rel="stylesheet" type="text/css"
-	href="${resource(dir:'css', file:'datasetExplorer.css')}">
-
+<link rel="stylesheet" type="text/css" href="${resource(dir: 'css', file: 'datasetExplorer.css')}">
 </head>
 
 <body>
-	<form>
-		<br />
-		<br />
-		
-		<table>
-			<tr>
-				<th>
-					<span class='AnalysisHeader'>
-						<span style="font-size : large;">Forest Plot</span>
-						<!-- 
-						<a href='JavaScript:D2H_ShowHelp(1272,helpURL,"wndExternal",CTXT_DISPLAY_FULLHELP )'>
-							<img src="${resource(dir:'images',file:'help/helpicon_white.jpg')}" alt="Help" border=0 width=18pt style="margin-top:1pt;margin-bottom:1pt;margin-right:18pt;"/>
-						</a>
-						 -->						
-					</span>
-				</th> 
-			</tr>
-			<tr>
-				<td>
-					<table>
-						<tr>
-							<td>
-								<g:each var="location" in="${imageLocations}">
-                                    <g:img file="${location}" width="800" height="600"></g:img> <br />
-								</g:each>
-							</td>
-							<td>
-								${statisticByStratificationTable}
-							</td>
-						</tr>
-					</table>
-				</td>
-			</tr>
-			
-			<tr>
-				<td>
-					&nbsp;
-				</td>
-			</tr>				
-			
-			<tr>
-				<td>
-					${legendText}
-				</td>
-			</tr>				
-			
-			<tr>
-				<td>
-					&nbsp;
-				</td>
-			</tr>	
-			<tr>
-				<td>
-					${countData}		
-				</td>
-			</tr>				
-			<tr>
-				<td>
-					&nbsp;
-				</td>
-			</tr>			
-			<tr>
-				<td>
-					<g:if test="${zipLink}">
-						<a class='AnalysisLink' class='downloadLink' href="${resource(file: zipLink)}">Download raw R data</a>
-					</g:if>
-				</td>
-			</tr>	
-			<tr>
-				<td>
-					&nbsp;
-				</td>
-			</tr>	
-			<tr>
-				<td>
-					${rVersionInfo}
-				</td>
-			</tr>									
-		</table>
-	</form>
-</body>
+<form>
+	<br/>
+	<br/>
 
+	<table>
+		<tr>
+			<th>
+				<span class='AnalysisHeader'>
+					<span style="font-size : large;">Forest Plot</span>
+					<!--
+						<a href='JavaScript:D2H_ShowHelp(1272,helpURL,"wndExternal",CTXT_DISPLAY_FULLHELP )'>
+							<img src="${resource(dir: 'images/help', file: 'helpicon_white.jpg')}" alt="Help" border=0 width=18pt style="margin-top:1pt;margin-bottom:1pt;margin-right:18pt;"/>
+						</a>
+						 -->
+				</span>
+			</th>
+		</tr>
+		<tr>
+			<td>
+				<table>
+					<tr>
+						<td>
+						<g:each var='location' in="${imageLocations}">
+							<g:img file="${location}" width='800' height='600'/> <br/>
+						</g:each>
+						</td>
+						<td>${statisticByStratificationTable}</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+
+		<tr>
+			<td>&nbsp;</td>
+		</tr>
+
+		<tr>
+			<td>${legendText}</td>
+		</tr>
+
+		<tr>
+			<td>&nbsp;</td>
+		</tr>
+		<tr>
+			<td>${countData}</td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+		</tr>
+		<tr>
+			<td>
+			<g:if test="${zipLink}">
+				<a class='AnalysisLink' class='downloadLink' href="${resource(file: zipLink)}">Download raw R data</a>
+			</g:if>
+			</td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+		</tr>
+		<tr>
+			<td>${rVersionInfo}</td>
+		</tr>
+	</table>
+</form>
+</body>
 </html>

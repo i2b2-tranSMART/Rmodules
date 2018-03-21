@@ -1,6 +1,10 @@
 package jobs
 
-import jobs.steps.*
+import groovy.transform.CompileStatic
+import jobs.steps.BuildTableResultStep
+import jobs.steps.MultiRowAsGroupDumpTableResultsStep
+import jobs.steps.RCommandsStep
+import jobs.steps.Step
 import jobs.steps.helpers.NumericColumnConfigurator
 import jobs.steps.helpers.OptionalBinningColumnConfigurator
 import jobs.steps.helpers.SimpleAddColumnConfigurator
@@ -16,95 +20,96 @@ import javax.annotation.PostConstruct
 
 import static jobs.steps.AbstractDumpStep.DEFAULT_OUTPUT_FILE_NAME
 
+@CompileStatic
 @Component
 @Scope('job')
 class LogisticRegression extends AbstractAnalysisJob {
 
-    @Autowired
-    SimpleAddColumnConfigurator primaryKeyColumnConfigurator
+	@Autowired
+	SimpleAddColumnConfigurator primaryKeyColumnConfigurator
 
-    @Autowired
-    NumericColumnConfigurator independentVariableConfigurator
+	@Autowired
+	NumericColumnConfigurator independentVariableConfigurator
 
-    @Autowired
-    @Qualifier('general')
-    OptionalBinningColumnConfigurator outcomeVariableConfigurator
+	@Autowired
+	@Qualifier('general')
+	OptionalBinningColumnConfigurator outcomeVariableConfigurator
 
-    @Autowired
-    Table table
+	@Autowired
+	Table table
 
-    @PostConstruct
-    void init() {
-        primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
+	@PostConstruct
+	void init() {
+		primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
 
-        configureIndependentVariableConfigurator()
-        configureOutcomeVariableConfigurator()
-    }
+		configureIndependentVariableConfigurator()
+		configureOutcomeVariableConfigurator()
+	}
 
-    private void configureIndependentVariableConfigurator() {
-        independentVariableConfigurator.header = 'Y'
-        independentVariableConfigurator.setKeys('independent')
-        independentVariableConfigurator.projection = Projection.LOG_INTENSITY_PROJECTION
-        independentVariableConfigurator.multiRow   = true
-    }
+	private void configureIndependentVariableConfigurator() {
+		independentVariableConfigurator.header = 'Y'
+		independentVariableConfigurator.setKeys('independent')
+		independentVariableConfigurator.projection = Projection.LOG_INTENSITY_PROJECTION
+		independentVariableConfigurator.multiRow = true
+	}
 
-    private void configureOutcomeVariableConfigurator() {
+	private void configureOutcomeVariableConfigurator() {
 
-        outcomeVariableConfigurator.header = 'X'
-        outcomeVariableConfigurator.setKeys('groupBy')
-        outcomeVariableConfigurator.projection          = Projection.LOG_INTENSITY_PROJECTION
-        outcomeVariableConfigurator.multiRow            = true
-        outcomeVariableConfigurator.binningConfigurator.setKeys('')
-        def binningConfigurator = outcomeVariableConfigurator.binningConfigurator
-        binningConfigurator.keyForDoBinning           = 'binning'
-        binningConfigurator.keyForManualBinning       = 'manualBinning'
-        binningConfigurator.keyForNumberOfBins        = 'numberOfBins'
-        binningConfigurator.keyForBinDistribution     = 'binDistribution'
-        binningConfigurator.keyForBinRanges           = 'binRanges'
-        binningConfigurator.keyForVariableType        = 'variableType'
+		outcomeVariableConfigurator.header = 'X'
+		outcomeVariableConfigurator.setKeys('groupBy')
+		outcomeVariableConfigurator.projection = Projection.LOG_INTENSITY_PROJECTION
+		outcomeVariableConfigurator.multiRow = true
+		outcomeVariableConfigurator.binningConfigurator.setKeys('')
+		def binningConfigurator = outcomeVariableConfigurator.binningConfigurator
+		binningConfigurator.keyForDoBinning = 'binning'
+		binningConfigurator.keyForManualBinning = 'manualBinning'
+		binningConfigurator.keyForNumberOfBins = 'numberOfBins'
+		binningConfigurator.keyForBinDistribution = 'binDistribution'
+		binningConfigurator.keyForBinRanges = 'binRanges'
+		binningConfigurator.keyForVariableType = 'variableType'
 
-    }
+	}
 
-    @Override
-    protected List<Step> prepareSteps() {
-        List<Step> steps = []
+	@Override
+	protected List<Step> prepareSteps() {
+		List<Step> steps = []
 
-        steps << new BuildTableResultStep(
-                table:         table,
-                configurators: [primaryKeyColumnConfigurator,
-                                outcomeVariableConfigurator,
-                                independentVariableConfigurator])
+		steps << new BuildTableResultStep(
+				table: table,
+				configurators: [primaryKeyColumnConfigurator,
+				                outcomeVariableConfigurator,
+				                independentVariableConfigurator])
 
-        steps << new MultiRowAsGroupDumpTableResultsStep(
-                table:              table,
-                temporaryDirectory: temporaryDirectory,
-                outputFileName:     DEFAULT_OUTPUT_FILE_NAME)
+		steps << new MultiRowAsGroupDumpTableResultsStep(
+				table: table,
+				temporaryDirectory: temporaryDirectory,
+				outputFileName: DEFAULT_OUTPUT_FILE_NAME)
 
-        steps << new RCommandsStep(
-                temporaryDirectory: temporaryDirectory,
-                scriptsDirectory:   scriptsDirectory,
-                rStatements:        RStatements,
-                studyName:          studyName,
-                params:             params,
-                extraParams:        [inputFileName: DEFAULT_OUTPUT_FILE_NAME])
+		steps << new RCommandsStep(
+				temporaryDirectory: temporaryDirectory,
+				scriptsDirectory: scriptsDirectory,
+				rStatements: RStatements,
+				studyName: studyName,
+				params: params,
+				extraParams: [inputFileName: DEFAULT_OUTPUT_FILE_NAME])
 
-        steps
-    }
+		steps
+	}
 
-    @Override
-    protected List<String> getRStatements() {
-        [
-            '''source('$pluginDirectory/LogisticRegression/LogisticRegressionLoader.R')''',
-            '''LogisticRegressionData.loader(input.filename='outputfile.txt',
+	@Override
+	protected List<String> getRStatements() {
+		[
+				'''source('$pluginDirectory/LogisticRegression/LogisticRegressionLoader.R')''',
+				'''LogisticRegressionData.loader(input.filename='outputfile.txt',
                         concept.dependent='$groupByVariable',
                         concept.independent='$independentVariable',
                         binning.enabled='FALSE',
                         binning.variable='')'''
-        ]
-    }
+		]
+	}
 
-    @Override
-    protected getForwardPath() {
-        return "/logisticRegression/logisticRegressionOutput?jobName=$name"
-    }
+	@Override
+	protected String getForwardPath() {
+		"/logisticRegression/logisticRegressionOutput?jobName=$name"
+	}
 }

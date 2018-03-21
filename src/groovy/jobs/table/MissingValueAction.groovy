@@ -1,37 +1,36 @@
 package jobs.table
 
+import groovy.transform.CompileStatic
+
 interface MissingValueAction {
 
-    /* null means delete row. Return an empty string to leave the cell empty */
-    Object getReplacement(String primaryKey)
+	// null means delete row. Return an empty string to leave the cell empty
 
-    static class ThrowExceptionMissingValueAction implements MissingValueAction {
+	def getReplacement(String primaryKey)
 
-        Class exceptionClass
-        String message
+	@CompileStatic
+	static class ThrowExceptionMissingValueAction implements MissingValueAction {
 
-        @Override
-        Object getReplacement(String primaryKey) {
-            throw exceptionClass.newInstance(message)
-        }
-    }
+		Class exceptionClass
+		String message
 
-    static class ConstantReplacementMissingValueAction implements MissingValueAction {
+		def getReplacement(String primaryKey) {
+			throw exceptionClass.newInstance(message)
+		}
+	}
 
-        Object replacement
+	@CompileStatic
+	static class ConstantReplacementMissingValueAction implements MissingValueAction {
 
-        @Override
-        Object getReplacement(String primaryKey) {
-            replacement
-        }
-    }
+		def replacement
 
-    static class DropRowMissingValueAction implements MissingValueAction {
+		def getReplacement(String primaryKey) {
+			replacement
+		}
+	}
 
-        @Override
-        Object getReplacement(String primaryKey) {
-            null
-        }
-    }
-
+	@CompileStatic
+	static class DropRowMissingValueAction implements MissingValueAction {
+		def getReplacement(String primaryKey) {}
+	}
 }

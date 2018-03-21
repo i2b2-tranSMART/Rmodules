@@ -29,158 +29,152 @@ import static jobs.misc.Hacks.createConceptKeyFrom
 @Scope('prototype')
 class HighDimensionColumnConfigurator extends ColumnConfigurator {
 
-    String projection
+	String projection
 
-    String keyForConceptPath,
-           keyForDataType,
-           keyForSearchKeywordId
+	String keyForConceptPath
+	String keyForDataType
+	String keyForSearchKeywordId
 
-    boolean multiRow = false
+	boolean multiRow = false
 
-    // multiConcepts => multiRow
-    boolean multiConcepts = false
+	// multiConcepts => multiRow
+	boolean multiConcepts = false
 
-    boolean isMultiConcepts() {
-        multiConcepts
-    }
+	boolean isMultiConcepts() {
+		multiConcepts
+	}
 
-    boolean isMultiRow() {
-        multiRow || multiConcepts
-    }
+	boolean isMultiRow() {
+		multiRow || multiConcepts
+	}
 
-    @Autowired
-    private HighDimensionResource highDimensionResource
+	@Autowired
+	private HighDimensionResource highDimensionResource
 
-    @Autowired
-    private ResultInstanceIdsHolder resultInstanceIdsHolder
+	@Autowired
+	private ResultInstanceIdsHolder resultInstanceIdsHolder
 
-    @Lazy private List<String> conceptPaths = {
-        getStringParam(keyForConceptPath).split(/\|/) as List
-    }()
+	@Lazy
+	private List<String> conceptPaths = {
+		getStringParam(keyForConceptPath).split(/\|/) as List
+	}()
 
-    @Lazy private HighDimensionDataTypeResource subResource = {
-        String dataType = getStringParam(keyForDataType)
-        highDimensionResource.getSubResourceForType dataType
-    }()
+	@Lazy
+	private HighDimensionDataTypeResource subResource = {
+		String dataType = getStringParam(keyForDataType)
+		highDimensionResource.getSubResourceForType dataType
+	}()
 
-    @Lazy private Projection createdProjection = {
-        subResource.createProjection [:], projection
-    }()
+	@Lazy
+	private Projection createdProjection = {
+		subResource.createProjection [:], projection
+	}()
 
-    @Lazy private AssayConstraint patientSetConstraint = {
-        subResource.createAssayConstraint(
-                AssayConstraint.DISJUNCTION_CONSTRAINT,
-                subconstraints: [
-                        (AssayConstraint.PATIENT_SET_CONSTRAINT):
-                                resultInstanceIdsHolder.resultInstanceIds.collect {
-                                    [result_instance_id: it]
-                                }])
-    }()
+	@Lazy
+	private AssayConstraint patientSetConstraint = {
+		subResource.createAssayConstraint(
+				AssayConstraint.DISJUNCTION_CONSTRAINT,
+				subconstraints: [
+						(AssayConstraint.PATIENT_SET_CONSTRAINT):
+								resultInstanceIdsHolder.resultInstanceIds.collect {
+									[result_instance_id: it]
+								}])
+	}()
 
-    @Lazy private List<DataConstraint> dataConstraints = {
-        def searchKeywordIds = getStringParam(keyForSearchKeywordId).split(',') as List
-        def illegalSearchKeywordIds = searchKeywordIds.findAll{ !it.isLong() }
-        if (illegalSearchKeywordIds) {
-            throw new InvalidArgumentsException("Illegal search keyword ids: ${illegalSearchKeywordIds.join(',')}")
-        }
+	@Lazy
+	private List<DataConstraint> dataConstraints = {
+		List<String> searchKeywordIds = getStringParam(keyForSearchKeywordId).split(',')
+		List<String> illegalSearchKeywordIds = searchKeywordIds.findAll { !it.isLong() }
+		if (illegalSearchKeywordIds) {
+			throw new InvalidArgumentsException("Illegal search keyword ids: ${illegalSearchKeywordIds.join(',')}")
+		}
 
-        [subResource.createDataConstraint(
-                DataConstraint.SEARCH_KEYWORD_IDS_CONSTRAINT,
-                keyword_ids: searchKeywordIds)]
-    }()
+		[subResource.createDataConstraint(DataConstraint.SEARCH_KEYWORD_IDS_CONSTRAINT, keyword_ids: searchKeywordIds)]
+	}()
 
-    private TabularResult<AssayColumn, Number> openResultSet(String conceptPath) {
-        def assayConstraints = [patientSetConstraint]
-        assayConstraints << subResource.createAssayConstraint(
-                AssayConstraint.ONTOLOGY_TERM_CONSTRAINT,
-                concept_key: createConceptKeyFrom(conceptPath))
+	private TabularResult<AssayColumn, Number> openResultSet(String conceptPath) {
+		List<AssayConstraint> assayConstraints = [patientSetConstraint]
+		assayConstraints << subResource.createAssayConstraint(
+				AssayConstraint.ONTOLOGY_TERM_CONSTRAINT,
+				concept_key: createConceptKeyFrom(conceptPath))
 
-        subResource.retrieveData assayConstraints, dataConstraints, createdProjection
-    }
+		subResource.retrieveData assayConstraints, dataConstraints, createdProjection
+	}
 
-    private Map<String, TabularResult> openMultipleResultSets() {
-        assert multiConcepts
+	private Map<String, TabularResult> openMultipleResultSets() {
+		assert multiConcepts
 
-         conceptPaths.collectEntries {
-            [it, openResultSet(it)]
-        }
-    }
+		conceptPaths.collectEntries { [it, openResultSet(it)] }
+	}
 
-    private Set<String> findCommonPatients(Map<String, TabularResult> results) {
-        Map<TabularResult, List<AssayColumn>> mapOfAssayLists =
-                results.collectEntries { String conceptPath,
-                                         TabularResult result ->
-                    [result, result.indicesList]
-                }
+	private Set<String> findCommonPatients(Map<String, TabularResult> results) {
+		Map<TabularResult, List<AssayColumn>> mapOfAssayLists =
+				results.collectEntries { String conceptPath, TabularResult result ->
+					[result, result.indicesList]
+				}
 
-        List<Set<String>> patientsSets = mapOfAssayLists.values().
-                collect { List<AssayColumn> assays ->
-                    Sets.newHashSet assays*.patientInTrialId
-                }
+		List<Set<String>> patientsSets = mapOfAssayLists.values().
+				collect { List<AssayColumn> assays ->
+					Sets.newHashSet assays*.patientInTrialId
+				}
 
-        Set<String> commonPatients = patientsSets[0]
-        if (patientsSets.size() > 1) {
-            patientsSets[1..-1].each { Set<String> current ->
-                commonPatients = Sets.intersection commonPatients, current
-            }
-        }
+		Set<String> commonPatients = patientsSets[0]
+		if (patientsSets.size() > 1) {
+			patientsSets[1..-1].each { Set<String> current ->
+				commonPatients = Sets.intersection commonPatients, current
+			}
+		}
 
-        if (commonPatients.empty) {
-            throw new InvalidArgumentsException(
-                    "The intersection of the patients for the assays of the " +
-                            "${commonPatients.size()} result sets is empty. " +
-                            "The patient sets for each result are, in order: " +
-                            patientsSets
-            )
-        }
+		if (commonPatients.empty) {
+			throw new InvalidArgumentsException(
+					"The intersection of the patients for the assays of the " +
+							"${commonPatients.size()} result sets is empty. " +
+							"The patient sets for each result are, in order: " +
+							patientsSets
+			)
+		}
 
-        commonPatients
-    }
+		commonPatients
+	}
 
-    @Override
-    protected void doAddColumn(Closure<Column> decorateColumn) {
-        if (conceptPaths.size() == 0) {
-            throw new InvalidArgumentsException(
-                    "Found empty concept paths list (key $keyForConceptPath)")
-        }
+	@Override
+	protected void doAddColumn(Closure<Column> decorateColumn) {
+		if (!conceptPaths) {
+			throw new InvalidArgumentsException("Found empty concept paths list (key $keyForConceptPath)")
+		}
 
-        if (!header) {
-            throw new IllegalStateException('header property must be set')
-        }
+		if (!header) {
+			throw new IllegalStateException('header property must be set')
+		}
 
-        Map<String, TabularResult> tabularResults
-        Set<String> commonPatients
-        if (conceptPaths.size() == 1 && !multiConcepts) {
-            tabularResults = ImmutableMap.of(
-                    header + '_highdim',
-                    openResultSet(conceptPaths[0]))
-        } else {
-            if (!multiConcepts) {
-                throw new InvalidArgumentsException(
-                        "Got multiple concept paths (key $keyForConceptPath), " +
-                                "but multiConcepts is not on")
-            }
+		Map<String, TabularResult> tabularResults
+		Set<String> commonPatients
+		if (conceptPaths.size() == 1 && !multiConcepts) {
+			tabularResults = ImmutableMap.of(header + '_highdim', openResultSet(conceptPaths[0]))
+		}
+		else {
+			if (!multiConcepts) {
+				throw new InvalidArgumentsException(
+						"Got multiple concept paths (key $keyForConceptPath), but multiConcepts is not on")
+			}
 
-            tabularResults = openMultipleResultSets()
-            commonPatients = findCommonPatients(tabularResults)
-        }
+			tabularResults = openMultipleResultSets()
+			commonPatients = findCommonPatients(tabularResults)
+		}
 
-        tabularResults.each { String dataSourceName,
-                              TabularResult dataSource ->
-            table.addDataSource dataSourceName, dataSource
-        }
+		tabularResults.each { String dataSourceName, TabularResult dataSource ->
+			table.addDataSource dataSourceName, dataSource
+		}
 
-        def highDimColumn
-        if (!multiRow) {
-            highDimColumn = new HighDimensionSingleRowResultColumn(
-                    header: header)
-        } else {
-            highDimColumn = new HighDimensionMultipleRowsResultColumn(
-                    header:             header,
-                    patientsToConsider: commonPatients)
-        }
-        table.addColumn(
-                decorateColumn.call(highDimColumn),
-                tabularResults.keySet())
-    }
+		def highDimColumn
+		if (!multiRow) {
+			highDimColumn = new HighDimensionSingleRowResultColumn(header: header)
+		}
+		else {
+			highDimColumn = new HighDimensionMultipleRowsResultColumn(
+					header: header,
+					patientsToConsider: commonPatients)
+		}
+		table.addColumn decorateColumn(highDimColumn), tabularResults.keySet()
+	}
 }

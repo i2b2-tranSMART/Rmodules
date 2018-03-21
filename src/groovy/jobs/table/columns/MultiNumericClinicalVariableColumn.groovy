@@ -14,48 +14,43 @@ import org.transmartproject.core.exceptions.InvalidArgumentsException
 @CompileStatic
 class MultiNumericClinicalVariableColumn extends AbstractColumn {
 
-    /* clinical variable -> name of the group */
-    Map<ClinicalVariableColumn, String> clinicalVariables
+	// clinical variable -> name of the group
+	Map<ClinicalVariableColumn, String> clinicalVariables
 
-    private PatientRow lastRow
+	private PatientRow lastRow
 
-    @Override
-    void onReadRow(String dataSourceName, Object row) {
-        assert lastRow == null
-        assert row instanceof PatientRow
+	@Override
+	void onReadRow(String dataSourceName, row) {
+		assert lastRow == null
+		assert row instanceof PatientRow
 
-        lastRow = (PatientRow) row
-    }
+		lastRow = (PatientRow) row
+	}
 
-    @Override
-    Map<String, Object> consumeResultingTableRows() {
-        if (lastRow == null) {
-            return ImmutableMap.of()
-        }
+	@Override
+	Map<String, Object> consumeResultingTableRows() {
+		if (lastRow == null) {
+			return ImmutableMap.of()
+		}
 
-        ImmutableMap.Builder<String, Object> builder =
-                ImmutableMap.builder()
+		ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder()
 
-        clinicalVariables.each { ClinicalVariableColumn col,
-                                 String groupName ->
-            def value = lastRow.getAt col
-            if (value != null) {
-                validateNumber col, value
-                builder.put groupName, value
-            }
-        }
+		clinicalVariables.each { ClinicalVariableColumn col, String groupName ->
+			def value = lastRow.getAt col
+			if (value != null) {
+				validateNumber col, value
+				builder.put groupName, value
+			}
+		}
 
-        PatientRow lastRowSaved = lastRow
-        lastRow = null
-        ImmutableMap.of(
-                lastRowSaved.patient.inTrialId,
-                builder.build())
-    }
+		PatientRow lastRowSaved = lastRow
+		lastRow = null
+		ImmutableMap.of(lastRowSaved.patient.inTrialId, builder.build()) as Map
+	}
 
-    private void validateNumber(ClinicalVariableColumn col, Object value) {
-        if (!(value instanceof Number)) {
-            throw new InvalidArgumentsException(
-                    "Got non-numerical value for column $col; value was $value")
-        }
-    }
+	private void validateNumber(ClinicalVariableColumn col, Object value) {
+		if (!(value instanceof Number)) {
+			throw new InvalidArgumentsException("Got non-numerical value for column $col; value was $value")
+		}
+	}
 }

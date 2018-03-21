@@ -1,4 +1,4 @@
-import groovy.util.logging.Log4j
+import groovy.util.logging.Slf4j
 import org.codehaus.groovy.runtime.ConvertedMap
 import org.codehaus.groovy.runtime.InvokerHelper
 import org.gmock.GMockController
@@ -13,31 +13,33 @@ import org.transmartproject.core.users.ProtectedOperation
 import org.transmartproject.core.users.ProtectedResource
 import org.transmartproject.core.users.User
 
-@Log4j
+import java.lang.reflect.Proxy
+
 class GMockFactoryBean implements FactoryBean {
 
-    final boolean singleton = true
+	final boolean singleton = true
 
-    Class clazz
+	Class clazz
 
-    @Autowired
-    GMockController gMockController
+	@Autowired
+	GMockController gMockController
 
-    private Object object
+	private object
 
-    def getObject() {
-        if (clazz == null) {
-            /* refuse to give an object if not fully initialized yet */
-            throw new BeanCreationException('Asked to give mock without class being specified')
-        }
-        if (object == null) {
-            object = gMockController.mock(clazz)
-        }
-        object
-    }
+	def getObject() {
+		if (clazz == null) {
+			/* refuse to give an object if not fully initialized yet */
+			throw new BeanCreationException('Asked to give mock without class being specified')
+		}
 
-    @Override
-    Class<?> getObjectType() { clazz }
+		if (object == null) {
+			object = gMockController.mock(clazz)
+		}
+
+		object
+	}
+
+	Class<?> getObjectType() { clazz }
 }
 
 /* can't use ScopedProxyFactoryBean because it creates a JDK proxy,
@@ -46,105 +48,94 @@ class GMockFactoryBean implements FactoryBean {
  */
 class GroovyInterceptableProxyFactoryBean implements FactoryBean {
 
-    Class<?> objectType
-    String targetBeanName
+	Class<?> objectType
+	String targetBeanName
 
-    @Autowired
-    ApplicationContext ctx
-    final boolean singleton = true
+	@Autowired
+	ApplicationContext ctx
 
-    @Lazy Object object = {
-        assert targetBeanName != null
-        assert objectType != null
+	final boolean singleton = true
 
-        java.lang.reflect.Proxy.newProxyInstance(
-                objectType.classLoader,
-                [objectType, GroovyInterceptable] as Class<?>[],
-                new ConvertedMap(invokeMethod: { String name, Object args ->
-                    InvokerHelper.invokeMethodSafe(
-                            ctx.getBean(targetBeanName),
-                            name,
-                            args)
-                }))
-    }()
+	@Lazy object = {
+		assert targetBeanName
+		assert objectType
+
+		Proxy.newProxyInstance(objectType.classLoader,
+				[objectType, GroovyInterceptable] as Class<?>[],
+				new ConvertedMap(invokeMethod: { String name, args ->
+					InvokerHelper.invokeMethodSafe ctx.getBean(targetBeanName), name, args
+				}))
+	}()
 }
 
-@Log4j
+@Slf4j('logger')
 class CurrentUserBeanMockFactory implements FactoryBean<User> {
-    final Class<?> objectType = User
+	final Class<?> objectType = User
 
-    final boolean singleton = true
+	final boolean singleton = true
 
-    void registerBeanToTry(String beanName) {
-        log.debug('Mocked call to &currentUserBean.registerBeanToTry with ' +
-                "beanName=$beanName")
-    }
+	void registerBeanToTry(String beanName) {
+		logger.debug 'Mocked call to &currentUserBean.registerBeanToTry with beanName={}', beanName
+	}
 
-    User getObject() throws Exception {
-        [
-            canPerform: { ProtectedOperation operation,
-                          ProtectedResource protectedResource ->
-                log.debug("Mocked call to currentUserBean.canPerform with " +
-                        "operation=$operation, " +
-                        "protectedResource=$protectedResource")
-                true
-            }
-        ] as User
-    }
+	User getObject() {
+		[canPerform: { ProtectedOperation operation, ProtectedResource protectedResource ->
+			logger.debug 'Mocked call to currentUserBean.canPerform with operation={}, protectedResource={}',
+					operation, protectedResource
+			true
+		}] as User
+	}
 
-    /* the application is aware that currentUserBean is a BeanFactory that
-     * returns proxies. Hence, on doWithApplicationContext, we get a
-     * reference to the bean factory itself (with &) and in RModulesController
-     * we call currentUserBean.targetSource.
-     * The first case is covered here by implementing registerBeanToTry(),
-     * but the second is not necessary because we're not testing
-     * RModulesController. If we did, we'd need to have the object returned
-     * by getObject() to provide a getTargetSource method.
-     */
+	/* the application is aware that currentUserBean is a BeanFactory that
+	 * returns proxies. Hence, on doWithApplicationContext, we get a
+	 * reference to the bean factory itself (with &) and in RModulesController
+	 * we call currentUserBean.targetSource.
+	 * The first case is covered here by implementing registerBeanToTry(),
+	 * but the second is not necessary because we're not testing
+	 * RModulesController. If we did, we'd need to have the object returned
+	 * by getObject() to provide a getTargetSource method.
+	 */
 }
 
 beans = {
-    /*
-     *  Note that this file is only used for testing.
-     *  It is excluded from the final plugin artifact
-     */
+	// Note that this file is only used for testing. It is excluded from the final plugin artifact
 
-    gmockController GMockController, { bean ->
-        bean.scope = 'job'
-    }
+	gmockController GMockController, { bean ->
+		bean.scope = 'job'
+	}
 
-    /* Mock the core-db services */
+	// Mock the core-db services
 
-    highDimensionResourceService GroovyInterceptableProxyFactoryBean, {
-        targetBeanName = 'scopedHighDimensionResourceService'
-        objectType = HighDimensionResource
-    }
+	highDimensionResourceService GroovyInterceptableProxyFactoryBean, {
+		targetBeanName = 'scopedHighDimensionResourceService'
+		objectType = HighDimensionResource
+	}
 
-    clinicalDataResourceService GroovyInterceptableProxyFactoryBean, {
-        targetBeanName = 'scopedClinicalDataResourceService'
-        objectType = ClinicalDataResource
-    }
+	clinicalDataResourceService GroovyInterceptableProxyFactoryBean, {
+		targetBeanName = 'scopedClinicalDataResourceService'
+		objectType = ClinicalDataResource
+	}
 
-    queriesResourceService GroovyInterceptableProxyFactoryBean, {
-        targetBeanName = 'scopedQueriesResourceService'
-        objectType = QueriesResource
-    }
+	queriesResourceService GroovyInterceptableProxyFactoryBean, {
+		targetBeanName = 'scopedQueriesResourceService'
+		objectType = QueriesResource
+	}
 
-    scopedHighDimensionResourceService GMockFactoryBean, { bean ->
-        clazz = HighDimensionResource
-        bean.scope = 'job'
-    }
+	scopedHighDimensionResourceService GMockFactoryBean, { bean ->
+		clazz = HighDimensionResource
+		bean.scope = 'job'
+	}
 
-    scopedClinicalDataResourceService GMockFactoryBean, { bean ->
-        clazz = ClinicalDataResource
-        bean.scope = 'job'
-    }
+	scopedClinicalDataResourceService GMockFactoryBean, { bean ->
+		clazz = ClinicalDataResource
+		bean.scope = 'job'
+	}
 
-    scopedQueriesResourceService GMockFactoryBean, { bean ->
-        clazz = QueriesResource
-        bean.scope = 'job'
-    }
+	scopedQueriesResourceService GMockFactoryBean, { bean ->
+		clazz = QueriesResource
+		bean.scope = 'job'
+	}
 
-    /* Mock of transmartApp bean */
-    currentUserBean CurrentUserBeanMockFactory
+	// Mock of transmartApp bean
+	currentUserBean CurrentUserBeanMockFactory
 }

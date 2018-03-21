@@ -10,31 +10,32 @@ import org.transmartproject.core.dataquery.DataRow
 import org.transmartproject.core.dataquery.highdim.AssayColumn
 
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.hasEntry
+import static org.hamcrest.Matchers.is
 
 @TestMixin(GrailsUnitTestMixin)
 @WithGMock
 class HighDimensionalDataRowMapAdapterTests {
 
-    @Delegate
-    MockTabularResultHelper mockTabularResultHelper
+	@Delegate
+	MockTabularResultHelper mockTabularResultHelper = new MockTabularResultHelper()
 
-    @Before
-    void before() {
-        mockTabularResultHelper = new MockTabularResultHelper()
-        mockTabularResultHelper.gMockController = $gmockController
-    }
+	@Before
+	void before() {
+		mockTabularResultHelper.gMockController = $gmockController
+	}
 
-    @Test
-    void basicTest() {
-        List<AssayColumn> assays = createSampleAssays(2)
-        DataRow row = createRowForAssays(assays, [1, 2], 'row1')
+	@Test
+	void basicTest() {
+		List<AssayColumn> assays = createSampleAssays(2)
+		DataRow row = createRowForAssays(assays, [1, 2], 'row1')
 
-        play {
-            def testee = new HighDimensionalDataRowMapAdapter(assays, row, 'prepend|')
-            assertThat testee, allOf(
-                    hasEntry(is('patient_1_subject_id'), hasEntry('prepend|row1', 1)),
-                    hasEntry(is('patient_2_subject_id'), hasEntry('prepend|row1', 2)),)
-        }
-    }
+		play {
+			def testee = new HighDimensionalDataRowMapAdapter(assays, row, 'prepend|')
+			assertThat testee, allOf(
+					hasEntry(is('patient_1_subject_id'), hasEntry('prepend|row1', 1)),
+					hasEntry(is('patient_2_subject_id'), hasEntry('prepend|row1', 2)),)
+		}
+	}
 }

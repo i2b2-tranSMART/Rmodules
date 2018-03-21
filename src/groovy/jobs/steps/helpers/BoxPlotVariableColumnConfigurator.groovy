@@ -20,41 +20,37 @@ import javax.annotation.PostConstruct
 @Qualifier('boxPlot')
 class BoxPlotVariableColumnConfigurator extends OptionalBinningColumnConfigurator {
 
-    String categoricalColumnHeader       = 'X'
-    String numericColumnHeader           = 'Y'
-    String keyForBinnedVariable          = 'binVariable'
-    String valueForThisColumnBeingBinned
+	String categoricalColumnHeader = 'X'
+	String numericColumnHeader = 'Y'
+	String keyForBinnedVariable = 'binVariable'
+	String valueForThisColumnBeingBinned
 
-    @PostConstruct
-    void initBoxPlot() {
-        binningConfigurator.additionalEnablingCheck = { UserParameters params ->
-            getStringParam(keyForBinnedVariable) == valueForThisColumnBeingBinned
-        }
-        forceNumericBinning             = false
-    }
+	@PostConstruct
+	void initBoxPlot() {
+		binningConfigurator.additionalEnablingCheck = { UserParameters params ->
+			getStringParam(keyForBinnedVariable) == valueForThisColumnBeingBinned
+		}
+		forceNumericBinning = false
+	}
 
-    @Override
-    void doAddColumn(Closure<Column> decorateColumn) {
-        /* if we have only one variable, we don't necessary want maps as values
-         * (namely, we don't want them if we have a clinical variable). */
-        numericColumnConfigurationClass =
-                isMultiVariable() ?
-                        ContextNumericVariableColumnConfigurator :
-                        NumericColumnConfigurator
+	@Override
+	void doAddColumn(Closure<Column> decorateColumn) {
+		/* if we have only one variable, we don't necessary want maps as values
+		 * (namely, we don't want them if we have a clinical variable). */
+		numericColumnConfigurationClass = isMultiVariable() ?
+				ContextNumericVariableColumnConfigurator :
+				NumericColumnConfigurator
 
-        super.doAddColumn decorateColumn
-    }
+		super.doAddColumn decorateColumn
+	}
 
-    @Override
-    void setHeader(String header) {
-        throw new UnsupportedOperationException(
-                'Column header is automatically assigned')
-    }
+	@Override
+	void setHeader(String header) {
+		throw new UnsupportedOperationException('Column header is automatically assigned')
+	}
 
-    @Override
-    String getHeader() {
-        categoricalOrBinned ?
-                categoricalColumnHeader :
-                numericColumnHeader
-    }
+	@Override
+	String getHeader() {
+		categoricalOrBinned ? categoricalColumnHeader : numericColumnHeader
+	}
 }

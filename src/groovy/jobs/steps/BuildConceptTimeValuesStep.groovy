@@ -1,47 +1,45 @@
 package jobs.steps
 
 import au.com.bytecode.opencsv.CSVWriter
+import groovy.transform.CompileStatic
 import jobs.table.ConceptTimeValuesTable
 
 /**
- * Created by carlos on 1/27/14.
+ * @author carlos
  */
+@CompileStatic
 class BuildConceptTimeValuesStep implements Step {
 
-    ConceptTimeValuesTable table
+	ConceptTimeValuesTable table
 
-    String[] header
+	String[] header
 
-    File outputFile
+	File outputFile
 
-    @Override
-    String getStatusName() {
-        return 'Creating concept time values table'
-    }
+	String getStatusName() {
+		'Creating concept time values table'
+	}
 
-    @Override
-    void execute() {
+	void execute() {
 
-        //makes sure the file is not there
-        outputFile.delete()
+		//makes sure the file is not there
+		outputFile.delete()
 
-        Map<String,Map> map = table.resultMap
-        if (map != null) {
-            writeToFile(map)
-        }
-    }
+		Map<String, Map> map = table.resultMap
+		if (map != null) {
+			writeToFile map
+		}
+	}
 
-    private void writeToFile(Map<String, Map> map) {
+	private void writeToFile(Map<String, Map> map) {
 
-        outputFile.withWriter { writer ->
-            CSVWriter csvWriter = new CSVWriter(writer, '\t' as char)
-            csvWriter.writeNext(header)
+		outputFile.withWriter { Writer writer ->
+			CSVWriter csvWriter = new CSVWriter(writer, '\t' as char)
+			csvWriter.writeNext header
 
-            map.each {
-                def line = [it.key, it.value.value] as String[]
-                csvWriter.writeNext(line)
-            }
-        }
-    }
-
+			for (Map.Entry<String, Map> entry in map.entrySet()) {
+				csvWriter.writeNext([entry.key, entry.value.value] as String[])
+			}
+		}
+	}
 }

@@ -1,95 +1,91 @@
 package jobs
 
+import groovy.transform.CompileStatic
 import jobs.misc.AnalysisConstraints
 import jobs.steps.ParametersFileStep
 import jobs.steps.Step
-import org.apache.log4j.Logger
 import org.quartz.JobExecutionException
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
 import javax.annotation.Resource
 
+@CompileStatic
 abstract class AbstractAnalysisJob {
 
-    static final String PARAM_ANALYSIS_CONSTRAINTS = 'analysisConstraints'
+	Logger logger = LoggerFactory.getLogger(getClass())
 
-    Logger log = Logger.getLogger(getClass())
+	@Autowired
+	UserParameters params
 
-    @Autowired
-    UserParameters params
+	@Autowired
+	AnalysisConstraints analysisConstraints
 
-    @Autowired
-    AnalysisConstraints analysisConstraints
+	@Resource(name = 'jobName')
+	String name // The job instance name
 
-    @Resource(name = 'jobName')
-    String name /* The job instance name */
+	/* manually injected properties
+	 *********************/
 
-    /* manually injected properties
-     *********************/
+	Closure updateStatus
+	Closure setStatusList
+	File topTemporaryDirectory
+	File scriptsDirectory
 
-    Closure updateStatus
+	/* TODO: Used to build temporary working directory for R processing phase.
+				This is called subset1_<study name>. What about subset 2? Is this
+				really needed or an arbitrary directory is enough? Is it required
+				due to some interaction with clinical data? */
+	String studyName
 
-    Closure setStatusList
+	/* end manually injected properties
+	 *************************/
 
-    File topTemporaryDirectory
+	File temporaryDirectory /* the workingDirectory */
 
-    File scriptsDirectory
+	final void run() {
+		validateName()
+		setupTemporaryDirectory()
 
-    /* TODO: Used to build temporary working directory for R processing phase.
-             This is called subset1_<study name>. What about subset 2? Is this
-             really needed or an arbitrary directory is enough? Is it required
-             due to some interaction with clinical data? */
-    String studyName
+		List<Step> stepList = []
 
-    /* end manually injected properties
-     *************************/
+		/* we need the parameters file not just for troubleshooting
+		 * but also because we need later to read the result instance
+		 * ids and determine if we should create the zip with the
+		 * intermediate data */
+		stepList << new ParametersFileStep(temporaryDirectory: temporaryDirectory, params: params)
 
-    File temporaryDirectory /* the workingDirectory */
+		stepList.addAll prepareSteps()
 
+		// build status list
+		setStatusList stepList.collect { Step s -> s.statusName }.grep()
 
-    final void run() {
-        validateName()
-        setupTemporaryDirectory()
+		for (Step step in stepList) {
+			if (step.statusName) {
+				updateStatus step.statusName
+			}
 
-        List<Step> stepList = [
-                /* we need the parameters file not just for troubleshooting
-                 * but also because we need later to read the result instance
-                 * ids and determine if we should create the zip with the
-                 * intermediate data */
-                new ParametersFileStep(
-                        temporaryDirectory: temporaryDirectory,
-                        params: params)
-        ]
-        stepList += prepareSteps()
+			step.execute()
+		}
 
-        // build status list
-        setStatusList(stepList.collect({ it.statusName }).grep())
+		updateStatus 'Completed', forwardPath
+	}
 
-        for (Step step in stepList) {
-            if (step.statusName) {
-                updateStatus step.statusName
-            }
+	protected abstract List<Step> prepareSteps()
 
-            step.execute()
-        }
+	protected abstract List<String> getRStatements()
 
-        updateStatus('Completed', forwardPath)
-    }
+	protected abstract String getForwardPath()
 
-    abstract protected List<Step> prepareSteps()
+	private void validateName() {
+		if (!(name ==~ /^[0-9A-Za-z-]+$/)) {
+			throw new JobExecutionException('Job name mangled')
+		}
+	}
 
-    abstract protected List<String> getRStatements()
-
-    private void validateName() {
-        if (!(name ==~ /^[0-9A-Za-z-]+$/)) {
-            throw new JobExecutionException("Job name mangled")
-        }
-    }
-
-    private void setupTemporaryDirectory() {
-        temporaryDirectory = new File(new File(topTemporaryDirectory, name), 'workingDirectory')
-        temporaryDirectory.mkdirs()
-    }
-
-    abstract protected getForwardPath()
+	private void setupTemporaryDirectory() {
+		temporaryDirectory = new File(new File(topTemporaryDirectory, name), 'workingDirectory')
+		temporaryDirectory.mkdirs()
+	}
 }
