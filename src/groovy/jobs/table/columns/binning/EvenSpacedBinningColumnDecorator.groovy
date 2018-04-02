@@ -17,24 +17,25 @@ class EvenSpacedBinningColumnDecorator implements ColumnDecorator {
 	private Map<String, Number> min = [:].withDefault { Double.POSITIVE_INFINITY }
 	private Map<String, Number> max = [:].withDefault { Double.NEGATIVE_INFINITY }
 
-	private Map<String, List> binNames = { ->
-		Map<String, List> ret = [:]
-		ret.withDefault { String ctx ->
-			ret[ctx] = (1..numberOfBins).collect { Integer it ->
+	private Map<String, List> binNames
+	private Map<String, BigDecimal> inverseBinInterval
+
+	EvenSpacedBinningColumnDecorator() {
+		Map<String, List> map = [:]
+		binNames = map.withDefault { String ctx ->
+			map[ctx] = (1..numberOfBins).collect { Integer it ->
 				def lowerBound = min[ctx] + ((max[ctx] - min[ctx]) / numberOfBins) * (it - 1)
 				def upperBound = min[ctx] + ((max[ctx] - min[ctx]) / numberOfBins) * it
 				def op2 = it == numberOfBins ? '≤' : '<'
 				"$lowerBound ≤ $header $op2 $upperBound" as String
 			}
 		}
-	}()
 
-	private Map<String, BigDecimal> inverseBinInterval = {
-		def ret = [:]
-		ret.withDefault { String ctx ->
-			ret[ctx] = numberOfBins / (max[ctx] - min[ctx])
+		Map<String, BigDecimal> map2 = [:]
+		inverseBinInterval = map2.withDefault { String ctx ->
+			map2[ctx] = numberOfBins / (max[ctx] - min[ctx])
 		}
-	}()
+	}
 
 	private void considerValue(String ctx, Number value) {
 		if (value < min[ctx]) {

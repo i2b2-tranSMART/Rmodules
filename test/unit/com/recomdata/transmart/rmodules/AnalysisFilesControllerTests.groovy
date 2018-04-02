@@ -47,7 +47,7 @@ class AnalysisFilesControllerTests {
 		controller.RModulesOutputRenderService.tempFolderDirectory = temporaryDirectory.absolutePath + '/'
 
 		controller.sendFileService = new SendFileService() {
-			def sendFile(ServletContext servletContext, HttpServletRequest request,
+			void sendFile(ServletContext servletContext, HttpServletRequest request,
 			             HttpServletResponse response, File file, Map headers = [:]) {
 				assert file == targetFile
 			}

@@ -22,7 +22,8 @@ import groovy.util.logging.Slf4j
 import org.codehaus.groovy.grails.web.json.JSONObject
 import org.quartz.JobDataMap
 import org.quartz.JobDetail
-import org.quartz.SimpleTrigger
+import org.quartz.impl.JobDetailImpl
+import org.quartz.impl.triggers.SimpleTriggerImpl
 
 @Slf4j('logger')
 class RModulesService {
@@ -179,11 +180,11 @@ class RModulesService {
 		}
 
 		//com.recomdata.transmart.plugin.PluginJobExecutionService should be implemented by all Plugins
-		JobDetail jobDetail = new JobDetail(params.jobName, params.jobType, RModulesJobService)
+		JobDetail jobDetail = new JobDetailImpl(params.jobName, params.jobType, RModulesJobService)
 		jobDetail.jobDataMap = jobDataMap
 
 		quartzScheduler.scheduleJob jobDetail,
-				new SimpleTrigger('triggerNow' + System.currentTimeMillis(), 'RModules')
+				new SimpleTriggerImpl('triggerNow' + System.currentTimeMillis(), 'RModules')
 	}
 
 	// method for non-R jobs, used in transmart-metacore-plugin

@@ -5,8 +5,8 @@ import com.google.common.collect.ImmutableMap
 import com.google.common.collect.Ordering
 import com.google.common.collect.Sets
 import com.google.common.collect.TreeMultimap
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
-import groovy.transform.TypeCheckingMode
 import org.mapdb.BTreeKeySerializer
 import org.mapdb.BTreeMap
 import org.mapdb.DB
@@ -58,8 +58,8 @@ class BackingMap implements AutoCloseable {
 	}
 
 	void putCell(String primaryKey, int columnNumber, Map mapValue) {
-		mapValue.each { String k, v ->
-			putCell primaryKey, columnNumber, k, v
+		mapValue.each { k, v ->
+			putCell primaryKey, columnNumber, (String) k, v
 		}
 	}
 
@@ -78,7 +78,7 @@ class BackingMap implements AutoCloseable {
 		map[Fun.t3(primaryKey, columnNumber, context)]
 	}
 
-	@CompileStatic(TypeCheckingMode.SKIP)
+	@CompileDynamic
 	Map<String, Set<String>> getContextPrimaryKeysMap(Integer column) {
 		Set<Fun.Tuple2<Integer, String>> set = contextsIndex.keySet().
 				subSet(Fun.t2(column, null), Fun.t2(column, Fun.HI))
@@ -88,7 +88,7 @@ class BackingMap implements AutoCloseable {
 		}
 	}
 
-	@CompileStatic(TypeCheckingMode.SKIP)
+	@CompileDynamic
 	Set<String> getPrimaryKeys() {
 		Fun.Tuple3 prevKey = Fun.t3(null, null, null) // null represents negative inf
 

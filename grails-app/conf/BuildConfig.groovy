@@ -57,8 +57,7 @@ grails.project.dependency.resolution = {
 
 	plugins {
 		compile ':codenarc:0.21'
-		compile ':quartz:1.0-RC2'
-		compile ':sendfile:0.2'
+		compile ':quartz:1.0.2'
 		compile ':spring-security-core:2.0.0'
 
 		compile ':transmart-shared:18.1-SNAPSHOT'

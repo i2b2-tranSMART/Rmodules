@@ -44,7 +44,8 @@ import org.codehaus.groovy.grails.web.converters.exceptions.ConverterException
 import org.codehaus.groovy.grails.web.json.JSONElement
 import org.quartz.JobDataMap
 import org.quartz.JobDetail
-import org.quartz.SimpleTrigger
+import org.quartz.impl.JobDetailImpl
+import org.quartz.impl.triggers.SimpleTriggerImpl
 import org.transmart.plugin.shared.SecurityService
 import org.transmartproject.core.exceptions.InvalidArgumentsException
 import org.transmartproject.core.users.User
@@ -144,10 +145,10 @@ class RModulesController {
 		params[PARAM_USER_PARAMETERS] = userParams
 		params[PARAM_USER_IN_CONTEXT] = currentUserBean.targetSource.target
 
-		JobDetail jobDetail = new JobDetail(params.jobName, params.jobType, AnalysisQuartzJobAdapter)
+		JobDetail jobDetail = new JobDetailImpl(params.jobName, params.jobType, AnalysisQuartzJobAdapter)
 		jobDetail.jobDataMap = new JobDataMap(params)
 		quartzScheduler.scheduleJob jobDetail,
-				new SimpleTrigger('triggerNow ' + System.currentTimeMillis(), 'RModules')
+				new SimpleTriggerImpl('triggerNow ' + System.currentTimeMillis(), 'RModules')
 	}
 
 	static AnalysisConstraints createAnalysisConstraints(Map params) {
