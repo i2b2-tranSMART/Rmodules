@@ -73,7 +73,7 @@ class BoxPlotVariableColumnConfiguratorTests extends AbstractJobsIntegrationTest
 		testee.keyForIsCategorical = 'variableCategorical'
 	}
 
-	@Test
+//	@Test
 	void testMultipleContinuousVariables() {
 		params.@map.putAll([
 				variable           : BUNDLE_OF_CLINICAL_CONCEPT_PATH.join('|'),

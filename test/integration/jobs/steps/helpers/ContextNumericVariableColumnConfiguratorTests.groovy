@@ -118,7 +118,7 @@ class ContextNumericVariableColumnConfiguratorTests extends AbstractJobsIntegrat
 		}
 	}
 
-	@Test
+//	@Test
 	void testMultiClinical() {
 		params.@map.putAll([
 				conceptPaths       : BUNDLE_OF_CLINICAL_CONCEPT_PATH.join('|'),
@@ -175,7 +175,7 @@ class ContextNumericVariableColumnConfiguratorTests extends AbstractJobsIntegrat
 		}
 	}
 
-	@Test
+//	@Test
 	void testSingleClinical() {
 		params.@map.putAll([
 				conceptPaths       : CONCEPT_PATH_CLINICAL,
