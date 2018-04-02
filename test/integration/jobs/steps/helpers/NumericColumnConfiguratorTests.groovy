@@ -1,6 +1,5 @@
 package jobs.steps.helpers
 
-import grails.test.mixin.TestMixin
 import jobs.UserParameters
 import jobs.table.Table
 import org.junit.Before
@@ -17,8 +16,9 @@ import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.closeTo
 import static org.hamcrest.Matchers.contains
 
-@TestMixin(JobsIntegrationTestMixin)
-class NumericColumnConfiguratorTests {
+class NumericColumnConfiguratorTests extends AbstractJobsIntegrationTest {
+
+	static transactional = false
 
 	@Autowired
 	Table table

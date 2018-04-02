@@ -18,7 +18,7 @@ package com.recomdata.transmart.data.association
 
 class WaterfallController {
 
-	def RModulesOutputRenderService
+	RModulesOutputRenderService RModulesOutputRenderService
 
 	def waterfallOut(String jobName) {
 		List<String> imageLinks = []

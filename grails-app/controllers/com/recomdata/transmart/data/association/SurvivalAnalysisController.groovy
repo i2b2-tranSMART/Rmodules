@@ -20,7 +20,7 @@ import java.util.regex.Matcher
 
 class SurvivalAnalysisController {
 
-	def RModulesOutputRenderService
+	RModulesOutputRenderService RModulesOutputRenderService
 
 	def survivalAnalysisOutput(String jobName) {
 		List<String> imageLinks = []

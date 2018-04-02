@@ -37,9 +37,6 @@ class PDFController {
 	private String tempFolderDirectory
 
 	def generatePDF(String htmlStr, String filename) {
-		response.contentType = 'application/pdf'
-		header 'Content-disposition', 'attachment; filename=' + (filename ?: 'document.pdf')
-
 		// parse our markup into an xml Document
 		try {
 			String css = 'file://' + servletContext.getRealPath('') + '/css/datasetExplorer.css'
@@ -56,6 +53,9 @@ class PDFController {
 				ITextRenderer renderer = new ITextRenderer()
 				renderer.setDocument doc, null
 				renderer.layout()
+
+				response.contentType = 'application/pdf'
+				header 'Content-disposition', 'attachment; filename=' + (filename ?: 'document.pdf')
 				renderer.createPDF response.outputStream
 				response.outputStream.flush()
 			}

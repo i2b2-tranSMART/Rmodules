@@ -20,7 +20,7 @@ import java.util.regex.Matcher
 
 class TableWithFisherController {
 
-	def RModulesOutputRenderService
+	RModulesOutputRenderService RModulesOutputRenderService
 
 	def fisherTableOut(String jobName) {
 

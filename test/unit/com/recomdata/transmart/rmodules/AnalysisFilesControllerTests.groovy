@@ -1,7 +1,6 @@
 package com.recomdata.transmart.rmodules
 
 import com.recomdata.transmart.data.association.RModulesOutputRenderService
-import grails.plugin.springsecurity.SpringSecurityService
 import grails.test.mixin.TestFor
 import org.junit.After
 import org.junit.Before
@@ -9,6 +8,8 @@ import org.junit.Test
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
+import org.springframework.security.core.userdetails.UserDetails
+import org.transmart.plugin.shared.SecurityService
 import org.transmartproject.core.exceptions.InvalidRequestException
 import sendfile.SendFileService
 
@@ -52,8 +53,10 @@ class AnalysisFilesControllerTests {
 			}
 		}
 
-		controller.springSecurityService = new SpringSecurityService() {
-			def getPrincipal() { AnalysisFilesControllerTests.this.principal }
+		controller.securityService = new SecurityService() {
+			UserDetails principal() {
+				AnalysisFilesControllerTests.this.principal
+			}
 		}
 	}
 

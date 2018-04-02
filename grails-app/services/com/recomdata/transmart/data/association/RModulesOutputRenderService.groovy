@@ -33,10 +33,10 @@ class RModulesOutputRenderService implements InitializingBean {
 	User currentUserBean
 	ZipService zipService
 
-	private String tempDirectory = ''
+	String tempDirectory = ''
 	private String jobName = ''
 	private String jobTypeName = ''
-	private String zipLink = ''
+	String zipLink = ''
 
 	@Value('${RModules.tempFolderDirectory:}')
 	private String tempFolderDirectory

@@ -1,6 +1,5 @@
 package jobs.steps.helpers
 
-import grails.test.mixin.TestMixin
 import jobs.UserParameters
 import jobs.table.Column
 import jobs.table.Table
@@ -12,8 +11,9 @@ import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.contains
 import static org.hamcrest.Matchers.is
 
-@TestMixin(JobsIntegrationTestMixin)
-class OptionalColumnConfiguratorDecoratorTests {
+class OptionalColumnConfiguratorDecoratorTests extends AbstractJobsIntegrationTest {
+
+	static transactional = false
 
 	public static final String COLUMN_HEADER = 'SAMPLE_HEADER'
 	public static final String FALLBACK_VALUE = 'FALLBACK'

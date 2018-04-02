@@ -1,7 +1,6 @@
 package jobs.steps.helpers
 
 import com.google.common.collect.Lists
-import grails.test.mixin.TestMixin
 import jobs.UserParameters
 import jobs.table.Table
 import jobs.table.columns.PrimaryKeyColumn
@@ -14,235 +13,239 @@ import org.transmartproject.core.dataquery.highdim.projections.Projection
 import org.transmartproject.core.exceptions.InvalidArgumentsException
 
 import static groovy.util.GroovyAssert.shouldFail
-import static jobs.steps.helpers.ConfiguratorTestsHelper.*
+import static jobs.steps.helpers.ConfiguratorTestsHelper.BUNDLE_OF_CLINICAL_CONCEPT_PATH
+import static jobs.steps.helpers.ConfiguratorTestsHelper.CONCEPT_PATH_CLINICAL
+import static jobs.steps.helpers.ConfiguratorTestsHelper.DATA_TYPE_NAME_CLINICAL
+import static jobs.steps.helpers.ConfiguratorTestsHelper.RESULT_INSTANCE_ID1
+import static jobs.steps.helpers.ConfiguratorTestsHelper.RESULT_INSTANCE_ID2
+import static jobs.steps.helpers.ConfiguratorTestsHelper.dot
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.contains
+import static org.hamcrest.Matchers.containsInAnyOrder
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasEntry
+import static org.hamcrest.Matchers.hasProperty
+import static org.hamcrest.Matchers.is
 
-@TestMixin(JobsIntegrationTestMixin)
-class BoxPlotVariableColumnConfiguratorTests {
+class BoxPlotVariableColumnConfiguratorTests extends AbstractJobsIntegrationTest {
 
-    public static final String VALUE_FOR_COLUMN_BEING_BINNED = 'IND'
-    public static final String TEST_HEADER = 'TEST_HEADER'
-    @Autowired
-    Table table
+	static transactional = false
 
-    @Autowired
-    UserParameters params
+	public static final String VALUE_FOR_COLUMN_BEING_BINNED = 'IND'
+	public static final String TEST_HEADER = 'TEST_HEADER'
 
-    @Autowired
-    BoxPlotVariableColumnConfigurator testee
+	@Autowired
+	Table table
 
-    @Autowired
-    ClinicalDataResource clinicalDataResourceMock
+	@Autowired
+	UserParameters params
 
-    @Delegate(interfaces = false)
-    ConfiguratorTestsHelper configuratorTestsHelper =
-            new ConfiguratorTestsHelper()
+	@Autowired
+	BoxPlotVariableColumnConfigurator testee
 
-    @Before
-    void setUp() {
-        initializeAsBean configuratorTestsHelper
+	@Autowired
+	ClinicalDataResource clinicalDataResourceMock
 
-        testee.projection            = Projection.DEFAULT_REAL_PROJECTION
-        testee.keyForConceptPaths    = 'variable'
-        testee.keyForDataType        = 'divVariableType'
-        testee.keyForSearchKeywordId = 'divVariablePathway'
+	@Delegate(interfaces = false)
+	ConfiguratorTestsHelper configuratorTestsHelper = new ConfiguratorTestsHelper()
 
-        BinningColumnConfigurator binningColumnConfigurator = testee.binningConfigurator
+	@Before
+	void setUp() {
+		initializeAsBean configuratorTestsHelper
 
-        binningColumnConfigurator.keyForDoBinning       = 'binning'
-        binningColumnConfigurator.keyForManualBinning   = 'manualBinning'
-        binningColumnConfigurator.keyForNumberOfBins    = 'numberOfBins'
-        binningColumnConfigurator.keyForBinDistribution = 'binDistribution'
-        binningColumnConfigurator.keyForBinRanges       = 'binRanges'
-        // distinct from testee.keyForDataType!
-        binningColumnConfigurator.keyForVariableType    = 'variableType'
+		testee.projection = Projection.DEFAULT_REAL_PROJECTION
+		testee.keyForConceptPaths = 'variable'
+		testee.keyForDataType = 'divVariableType'
+		testee.keyForSearchKeywordId = 'divVariablePathway'
 
-        testee.valueForThisColumnBeingBinned = VALUE_FOR_COLUMN_BEING_BINNED
-        testee.keyForIsCategorical           = 'variableCategorical'
-    }
+		BinningColumnConfigurator binningColumnConfigurator = testee.binningConfigurator
 
-    @Test
-    void testMultipleContinuousVariables() {
-        params.@map.putAll([
-                variable           : BUNDLE_OF_CLINICAL_CONCEPT_PATH.join('|'),
-                divVariableType    : DATA_TYPE_NAME_CLINICAL,
+		binningColumnConfigurator.keyForDoBinning = 'binning'
+		binningColumnConfigurator.keyForManualBinning = 'manualBinning'
+		binningColumnConfigurator.keyForNumberOfBins = 'numberOfBins'
+		binningColumnConfigurator.keyForBinDistribution = 'binDistribution'
+		binningColumnConfigurator.keyForBinRanges = 'binRanges'
+		// distinct from testee.keyForDataType!
+		binningColumnConfigurator.keyForVariableType = 'variableType'
 
-                binning            : 'FALSE',
-                binVariable        : 'DEP',
+		testee.valueForThisColumnBeingBinned = VALUE_FOR_COLUMN_BEING_BINNED
+		testee.keyForIsCategorical = 'variableCategorical'
+	}
 
-                variableCategorical: 'false',
-                result_instance_id1: RESULT_INSTANCE_ID1,
-                result_instance_id2: RESULT_INSTANCE_ID2,
-        ])
+	@Test
+	void testMultipleContinuousVariables() {
+		params.@map.putAll([
+				variable           : BUNDLE_OF_CLINICAL_CONCEPT_PATH.join('|'),
+				divVariableType    : DATA_TYPE_NAME_CLINICAL,
 
-        List<ClinicalVariableColumn> columns =
-                createClinicalVariableColumns BUNDLE_OF_CLINICAL_CONCEPT_PATH
+				binning            : 'FALSE',
+				binVariable        : 'DEP',
 
-        List<BigDecimal> valuesForColumns = [
-                11.0, 12.0, 13.0, //1st patient
-                21.0, 22.0, 23.0, //2nd patient
-        ]
+				variableCategorical: 'false',
+				result_instance_id1: RESULT_INSTANCE_ID1,
+				result_instance_id2: RESULT_INSTANCE_ID2,
+		])
 
-        setupClinicalResult 2, columns, valuesForColumns
+		List<ClinicalVariableColumn> columns = createClinicalVariableColumns BUNDLE_OF_CLINICAL_CONCEPT_PATH
 
-        configuratorTestsHelper.play {
-            testee.addColumn()
+		List<BigDecimal> valuesForColumns = [
+				11.0, 12.0, 13.0, //1st patient
+				21.0, 22.0, 23.0, //2nd patient
+		]
 
-            table.buildTable()
+		setupClinicalResult 2, columns, valuesForColumns
 
-            def res = table.result
-            assertThat res, containsInAnyOrder(
-                    contains(allOf(
-                            dot(['\\var 1\\', '\\var 2\\', '\\var 3\\'],
-                                    valuesForColumns[0..2], { a, b ->
-                                hasEntry(is(a), is(b))
-                            }
-                            ))),
-                    contains(allOf(
-                            dot(['\\var 1\\', '\\var 2\\', '\\var 3\\'],
-                                    valuesForColumns[3..5], { a, b ->
-                                        hasEntry(is(a), is(b))
-                                    }
-                            ))))
+		configuratorTestsHelper.play {
+			testee.addColumn()
 
-            // Y is the header for the numeric col
-            assertThat table.headers, contains('Y')
-        }
-    }
+			table.buildTable()
 
-    @Test
-    void testSingleContinuousVariable() {
-        params.@map.putAll([
-                variable           : CONCEPT_PATH_CLINICAL,
-                divVariableType    : DATA_TYPE_NAME_CLINICAL,
+			def res = table.result
+			assertThat res, containsInAnyOrder(
+					contains(allOf(
+							dot(['\\var 1\\', '\\var 2\\', '\\var 3\\'],
+									valuesForColumns[0..2], { a, b -> hasEntry(is(a), is(b)) }
+							))),
+					contains(allOf(
+							dot(['\\var 1\\', '\\var 2\\', '\\var 3\\'],
+									valuesForColumns[3..5], { a, b -> hasEntry(is(a), is(b)) }
+							))))
 
-                binning            : 'FALSE',
-                binVariable        : 'DEP',
+			// Y is the header for the numeric col
+			assertThat table.headers, contains('Y')
+		}
+	}
 
-                variableCategorical: 'false',
-                result_instance_id1: RESULT_INSTANCE_ID1,
-                result_instance_id2: RESULT_INSTANCE_ID2,
-        ])
+	@Test
+	void testSingleContinuousVariable() {
+		params.@map.putAll([
+				variable           : CONCEPT_PATH_CLINICAL,
+				divVariableType    : DATA_TYPE_NAME_CLINICAL,
 
-        ClinicalVariableColumn column =
-                createClinicalVariableColumns([CONCEPT_PATH_CLINICAL])[0]
+				binning            : 'FALSE',
+				binVariable        : 'DEP',
 
-        List<BigDecimal> valuesForColumn = [41.0 /* p1 */, 42.0 /* p2 */]
+				variableCategorical: 'false',
+				result_instance_id1: RESULT_INSTANCE_ID1,
+				result_instance_id2: RESULT_INSTANCE_ID2,
+		])
 
-        setupClinicalResult 2, [column], valuesForColumn
+		ClinicalVariableColumn column = createClinicalVariableColumns([CONCEPT_PATH_CLINICAL])[0]
 
-        configuratorTestsHelper.play {
-            testee.addColumn()
+		List<BigDecimal> valuesForColumn = [41.0 /* p1 */, 42.0 /* p2 */]
 
-            table.buildTable()
+		setupClinicalResult 2, [column], valuesForColumn
 
-            def res = table.result
-            assertThat res, containsInAnyOrder(
-                    contains(valuesForColumn[0]),
-                    contains(valuesForColumn[1]))
-        }
-    }
+		configuratorTestsHelper.play {
+			testee.addColumn()
 
-    @Test
-    void testCategoricalVariable() {
-        params.@map.putAll([
-                variable           : BUNDLE_OF_CLINICAL_CONCEPT_PATH.join('|'),
-                divVariableType    : DATA_TYPE_NAME_CLINICAL,
+			table.buildTable()
 
-                binning            : 'FALSE',
-                binVariable        : 'DEP',
+			def res = table.result
+			assertThat res, containsInAnyOrder(
+					contains(valuesForColumn[0]),
+					contains(valuesForColumn[1]))
+		}
+	}
 
-                variableCategorical: 'true',
-                result_instance_id1: RESULT_INSTANCE_ID1,
-                result_instance_id2: RESULT_INSTANCE_ID2,
-        ])
+	@Test
+	void testCategoricalVariable() {
+		params.@map.putAll([
+				variable           : BUNDLE_OF_CLINICAL_CONCEPT_PATH.join('|'),
+				divVariableType    : DATA_TYPE_NAME_CLINICAL,
 
-        List<ClinicalVariableColumn> columns =
-                createClinicalVariableColumns BUNDLE_OF_CLINICAL_CONCEPT_PATH
+				binning            : 'FALSE',
+				binVariable        : 'DEP',
 
-        List<BigDecimal> valuesForColumns = [
-                'aa', null, null, //1st patient
-                null, 'bb', null, //2nd patient
-        ]
+				variableCategorical: 'true',
+				result_instance_id1: RESULT_INSTANCE_ID1,
+				result_instance_id2: RESULT_INSTANCE_ID2,
+		])
 
-        setupClinicalResult 2, columns, valuesForColumns
+		List<ClinicalVariableColumn> columns = createClinicalVariableColumns BUNDLE_OF_CLINICAL_CONCEPT_PATH
 
-        configuratorTestsHelper.play {
-            table.addColumn(new PrimaryKeyColumn(header: 'PK'), [] as Set)
-            testee.addColumn()
+		List<BigDecimal> valuesForColumns = [
+				'aa', null, null, //1st patient
+				null, 'bb', null, //2nd patient
+		]
 
-            table.buildTable()
+		setupClinicalResult 2, columns, valuesForColumns
 
-            def res = table.result
-            assertThat res, containsInAnyOrder(
-                    contains('subject id #1', 'aa'),
-                    contains('subject id #2', 'bb'))
+		configuratorTestsHelper.play {
+			table.addColumn(new PrimaryKeyColumn(header: 'PK'), [] as Set)
+			testee.addColumn()
 
-            // X is the header for the categorical col (or binned numeric)
-            assertThat table.headers, contains('PK', 'X')
-        }
-    }
+			table.buildTable()
 
-    @Test
-    void testCategoricalVariableUsedAsNumeric() {
-        params.@map.putAll([
-                variable           : BUNDLE_OF_CLINICAL_CONCEPT_PATH.join('|'),
-                divVariableType    : DATA_TYPE_NAME_CLINICAL,
-                variableCategorical: 'false',
+			def res = table.result
+			assertThat res, containsInAnyOrder(
+					contains('subject id #1', 'aa'),
+					contains('subject id #2', 'bb'))
 
-                binning            : 'FALSE',
+			// X is the header for the categorical col (or binned numeric)
+			assertThat table.headers, contains('PK', 'X')
+		}
+	}
 
-                result_instance_id1: RESULT_INSTANCE_ID1,
-                result_instance_id2: RESULT_INSTANCE_ID2,
-        ])
+	@Test
+	void testCategoricalVariableUsedAsNumeric() {
+		params.@map.putAll([
+				variable           : BUNDLE_OF_CLINICAL_CONCEPT_PATH.join('|'),
+				divVariableType    : DATA_TYPE_NAME_CLINICAL,
+				variableCategorical: 'false',
+
+				binning            : 'FALSE',
+
+				result_instance_id1: RESULT_INSTANCE_ID1,
+				result_instance_id2: RESULT_INSTANCE_ID2,
+		])
 
 
-        def values = [null, 'foobar', null]
+		def values = [null, 'foobar', null]
 
-        /* clinical variables */
-        List<ClinicalVariableColumn> clinicalVariables =
-                createClinicalVariableColumns BUNDLE_OF_CLINICAL_CONCEPT_PATH
-        setupClinicalResult(1, clinicalVariables, values)
+		/* clinical variables */
+		List<ClinicalVariableColumn> clinicalVariables =
+				createClinicalVariableColumns BUNDLE_OF_CLINICAL_CONCEPT_PATH
+		setupClinicalResult(1, clinicalVariables, values)
 
-        testee.forceNumericBinning = false
+		testee.forceNumericBinning = false
 
-        assertThat shouldFail(InvalidArgumentsException, {
-            configuratorTestsHelper.play {
-                testee.addColumn()
+		assertThat shouldFail(InvalidArgumentsException, {
+			configuratorTestsHelper.play {
+				testee.addColumn()
 
-                table.buildTable()
-                Lists.newArrayList table.result
-            }
-        }), hasProperty('message', containsString('Got non-numerical value'))
-    }
+				table.buildTable()
+				Lists.newArrayList table.result
+			}
+		}), hasProperty('message', containsString('Got non-numerical value'))
+	}
 
-    @Test
-    void testBinnedNumericalIsX() {
-        params.@map.putAll([
-                variable           : CONCEPT_PATH_CLINICAL,
-                divVariableType    : DATA_TYPE_NAME_CLINICAL,
-                variableCategorical: 'false',
+	@Test
+	void testBinnedNumericalIsX() {
+		params.@map.putAll([
+				variable           : CONCEPT_PATH_CLINICAL,
+				divVariableType    : DATA_TYPE_NAME_CLINICAL,
+				variableCategorical: 'false',
 
-                binning            : 'TRUE',
-                manualBinning      : 'FALSE',
-                numberOfBins       : '2',
-                binDistribution    : 'EDP',
-                binVariable        : VALUE_FOR_COLUMN_BEING_BINNED,
+				binning            : 'TRUE',
+				manualBinning      : 'FALSE',
+				numberOfBins       : '2',
+				binDistribution    : 'EDP',
+				binVariable        : VALUE_FOR_COLUMN_BEING_BINNED,
 
-                result_instance_id1: RESULT_INSTANCE_ID1,
-                result_instance_id2: RESULT_INSTANCE_ID2,
-        ])
+				result_instance_id1: RESULT_INSTANCE_ID1,
+				result_instance_id2: RESULT_INSTANCE_ID2,
+		])
 
-        setupClinicalResult(1,
-                createClinicalVariableColumns([CONCEPT_PATH_CLINICAL]),
-                [34.0])
+		setupClinicalResult(1,
+				createClinicalVariableColumns([CONCEPT_PATH_CLINICAL]),
+				[34.0])
 
-        configuratorTestsHelper.play {
-            testee.addColumn()
-            table.buildTable()
-            assertThat table.headers, contains('X')
-        }
-    }
-
+		configuratorTestsHelper.play {
+			testee.addColumn()
+			table.buildTable()
+			assertThat table.headers, contains('X')
+		}
+	}
 }

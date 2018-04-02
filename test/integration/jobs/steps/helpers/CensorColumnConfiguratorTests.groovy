@@ -1,7 +1,6 @@
 package jobs.steps.helpers
 
 import com.google.common.collect.Lists
-import grails.test.mixin.TestMixin
 import jobs.UserParameters
 import jobs.table.Column
 import jobs.table.Table
@@ -20,8 +19,9 @@ import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.contains
 import static org.hamcrest.Matchers.containsInAnyOrder
 
-@TestMixin(JobsIntegrationTestMixin)
-class CensorColumnConfiguratorTests {
+class CensorColumnConfiguratorTests extends AbstractJobsIntegrationTest {
+
+	static transactional = false
 
 	@Autowired
 	Table table

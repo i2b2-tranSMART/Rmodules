@@ -85,7 +85,7 @@ class BinningColumnConfigurator extends ColumnConfigurator {
 			}
 
 			new NumericBinRange(from: parts[1] as BigDecimal, to: parts[2] as BigDecimal)
-		}.sort { it.from }
+		}.sort { NumericBinRange range -> range.from }
 	}
 
 	private Map<String, String> createConceptPathMap() {
@@ -112,7 +112,6 @@ class BinningColumnConfigurator extends ColumnConfigurator {
 
 	/**
 	 * Sets parameter keys based on optional base key part
-	 * @param keyPart
 	 */
 	void setKeys(String keyPart = '') {
 		String cap = keyPart.capitalize()

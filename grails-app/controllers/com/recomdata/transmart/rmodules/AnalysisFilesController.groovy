@@ -2,6 +2,8 @@ package com.recomdata.transmart.rmodules
 
 import com.recomdata.transmart.data.association.RModulesOutputRenderService
 import groovy.util.logging.Slf4j
+import org.springframework.security.core.GrantedAuthority
+import org.transmart.plugin.shared.SecurityService
 import org.transmartproject.core.exceptions.InvalidRequestException
 import sendfile.SendFileService
 
@@ -14,8 +16,8 @@ class AnalysisFilesController {
 	public static final String ROLE_ADMIN = 'ROLE_ADMIN'
 
 	RModulesOutputRenderService RModulesOutputRenderService
+	SecurityService securityService
 	SendFileService sendFileService
-	def springSecurityService
 
 	def download(String analysisName, String path) {
 
@@ -63,9 +65,7 @@ class AnalysisFilesController {
 	}
 
 	private boolean isAdmin() {
-		springSecurityService.principal.authorities.any {
-			it.authority == ROLE_ADMIN
-		}
+		securityService.principal().authorities.any { GrantedAuthority it -> it.authority == ROLE_ADMIN }
 	}
 
 	private File getJobsDirectory() {
@@ -75,7 +75,7 @@ class AnalysisFilesController {
 	private boolean checkPermissions(String jobName) {
 		String usernameFromJobName = extractUserFromJobName(jobName)
 
-		String currentUsername = springSecurityService.principal?.username
+		String currentUsername = securityService.currentUsername()
 		if (!currentUsername) {
 			logger.error 'Could not determine current logged in user\'s name'
 			return false

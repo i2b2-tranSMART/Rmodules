@@ -45,6 +45,7 @@ import org.codehaus.groovy.grails.web.json.JSONElement
 import org.quartz.JobDataMap
 import org.quartz.JobDetail
 import org.quartz.SimpleTrigger
+import org.transmart.plugin.shared.SecurityService
 import org.transmartproject.core.exceptions.InvalidArgumentsException
 import org.transmartproject.core.users.User
 
@@ -69,7 +70,7 @@ class RModulesController {
 			rnaseq           : 'rnaseq',
 			RNASEQ_RCNT      : 'rnaseq',
 			VCF              : 'vcf'
-	]
+	].asImmutable()
 
 	def asyncJobService
 	User currentUserBean
@@ -77,7 +78,7 @@ class RModulesController {
 	JobResultsService jobResultsService
 	def quartzScheduler
 	RModulesService RModulesService
-	def springSecurityService
+	SecurityService securityService
 
 	def canceljob(String jobName) {
 		response.contentType = 'text/json'
@@ -123,7 +124,7 @@ class RModulesController {
 			case 'groupTestaCGH': json = createJob(AcghGroupTest); break
 			case 'aCGHSurvivalAnalysis': json = createJob(AcghSurvivalAnalysis); break
 			case 'groupTestRNASeq': json = createJob(RNASeqGroupTest); break
-			default: json = RModulesService.scheduleJob(springSecurityService.principal.username, params)
+			default: json = RModulesService.scheduleJob(securityService.currentUsername(), params)
 		}
 
 		response.contentType = 'text/json'

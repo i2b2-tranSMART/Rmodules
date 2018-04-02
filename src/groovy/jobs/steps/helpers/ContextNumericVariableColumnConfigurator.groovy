@@ -57,7 +57,7 @@ class ContextNumericVariableColumnConfigurator extends ColumnConfigurator {
 	@Override
 	protected void doAddColumn(Closure<Column> decorateColumn) {
 		if (clinicalData) {
-			logger.debug '{} indicates clinical data; using the MultiNumericClinicalVariableColumnConfigurator', $keyForDataType
+			logger.debug '{} indicates clinical data; using the MultiNumericClinicalVariableColumnConfigurator', keyForDataType
 			multiClinicalConfigurator.doAddColumn decorateColumn
 		}
 		else {

@@ -31,6 +31,10 @@ grails.project.dependency.resolution = {
 		mavenLocal() // Note: use 'grails maven-install' to install required plugins locally
 		grailsCentral()
 		mavenCentral()
+		mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/libs-snapshots'
+		mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/libs-releases'
+		mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/plugins-releases'
+		mavenRepo 'http://ec2-35-170-59-132.compute-1.amazonaws.com:8080/artifactory/plugins-snapshots'
 		mavenRepo 'https://repo.transmartfoundation.org/content/repositories/public/'
 	}
 
@@ -39,7 +43,7 @@ grails.project.dependency.resolution = {
 		compile 'net.sf.opencsv:opencsv:2.3'
 		compile 'org.mapdb:mapdb:0.9.10'
 		compile 'org.rosuda:Rserve:1.7.3'
-		compile 'org.transmartproject:transmart-core-api:16.2'
+		compile 'org.transmartproject:transmart-core-api:18.1-SNAPSHOT'
 
 		// runtime instead of test due to technical limitations (referenced from resources.groovy)
 		runtime 'org.gmock:gmock:0.8.3', {
@@ -56,6 +60,8 @@ grails.project.dependency.resolution = {
 		compile ':quartz:1.0-RC2'
 		compile ':sendfile:0.2'
 		compile ':spring-security-core:2.0.0'
+
+		compile ':transmart-shared:18.1-SNAPSHOT'
 
 		build ':release:3.1.2', ':rest-client-builder:2.1.1', {
 			export = false
