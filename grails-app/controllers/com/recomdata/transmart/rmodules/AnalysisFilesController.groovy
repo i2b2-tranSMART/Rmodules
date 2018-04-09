@@ -4,6 +4,7 @@ import com.recomdata.transmart.data.association.RModulesOutputRenderService
 import groovy.util.logging.Slf4j
 import org.springframework.security.core.GrantedAuthority
 import org.transmart.plugin.shared.SecurityService
+import org.transmart.plugin.shared.security.Roles
 import org.transmartproject.core.exceptions.InvalidRequestException
 import sendfile.SendFileService
 
@@ -12,8 +13,6 @@ import java.util.regex.Pattern
 
 @Slf4j('logger')
 class AnalysisFilesController {
-
-	public static final String ROLE_ADMIN = 'ROLE_ADMIN'
 
 	RModulesOutputRenderService RModulesOutputRenderService
 	SecurityService securityService
@@ -64,10 +63,6 @@ class AnalysisFilesController {
 		sendFileService.sendFile servletContext, request, response, targetFile
 	}
 
-	private boolean isAdmin() {
-		securityService.principal().authorities.any { GrantedAuthority it -> it.authority == ROLE_ADMIN }
-	}
-
 	private File getJobsDirectory() {
 		new File(RModulesOutputRenderService.tempFolderDirectory)
 	}
@@ -81,7 +76,7 @@ class AnalysisFilesController {
 			return false
 		}
 
-		if (usernameFromJobName == currentUsername || admin) {
+		if (usernameFromJobName == currentUsername || securityService.principal().isAdmin()) {
 			return true
 		}
 

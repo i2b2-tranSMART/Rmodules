@@ -8,8 +8,9 @@ import org.junit.Test
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
-import org.springframework.security.core.userdetails.UserDetails
 import org.transmart.plugin.shared.SecurityService
+import org.transmart.plugin.shared.security.AuthUserDetails
+import org.transmart.plugin.shared.security.Roles
 import org.transmartproject.core.exceptions.InvalidRequestException
 import sendfile.SendFileService
 
@@ -54,7 +55,7 @@ class AnalysisFilesControllerTests {
 		}
 
 		controller.securityService = new SecurityService() {
-			UserDetails principal() {
+			AuthUserDetails principal() {
 				AnalysisFilesControllerTests.this.principal
 			}
 		}
@@ -63,9 +64,11 @@ class AnalysisFilesControllerTests {
 	private void setAdmin(boolean admin) {
 		Collection<GrantedAuthority> authorities = []
 		if (admin) {
-			authorities << new SimpleGrantedAuthority(AnalysisFilesController.ROLE_ADMIN)
+			authorities << new SimpleGrantedAuthority(Roles.ADMIN.authority)
 		}
-		principal = new User(username, username, authorities)
+		principal = new AuthUserDetails(username, username,
+				true, true, true, true,
+				authorities, 1, 'userRealName')
 	}
 
 	private void setFile(String filename) {
