@@ -23,7 +23,7 @@ class EvenSpacedBinningColumnDecorator implements ColumnDecorator {
 	EvenSpacedBinningColumnDecorator() {
 		Map<String, List> map = [:]
 		binNames = map.withDefault { String ctx ->
-			map[ctx] = (1..numberOfBins).collect { Integer it ->
+			map[ctx] = (1..numberOfBins).collect { int it ->
 				def lowerBound = min[ctx] + ((max[ctx] - min[ctx]) / numberOfBins) * (it - 1)
 				def upperBound = min[ctx] + ((max[ctx] - min[ctx]) / numberOfBins) * it
 				def op2 = it == numberOfBins ? '≤' : '<'

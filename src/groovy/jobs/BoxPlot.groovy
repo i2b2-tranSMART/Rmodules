@@ -19,8 +19,7 @@ class BoxPlot extends CategoricalOrBinnedJob {
 	@Autowired
 	BoxPlotVariableColumnConfigurator dependentVariableConfigurator
 
-	@Override
-	void afterPropertiesSet() throws Exception {
+	void afterPropertiesSet() {
 		primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
 
 		configureConfigurator independentVariableConfigurator, '', 'independent'

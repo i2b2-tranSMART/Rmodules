@@ -100,14 +100,14 @@ class GeneprintController {
 						processProtein value, geneprintEntry, proteinThreshold
 						break
 					case 'vcf':
-						processVcf(value.reference, geneprintEntry)
+						processVcf value.reference, geneprintEntry
 						break
 				}
 			}
 		}
 	}
 
-	private void processMrna(Double value, Map geneprintEntry, double mrnaThreshold) {
+	private void processMrna(double value, Map geneprintEntry, double mrnaThreshold) {
 		if (value > mrnaThreshold) {
 			geneprintEntry.mrna = 'UPREGULATED'
 		}
@@ -133,7 +133,7 @@ class GeneprintController {
 		}
 	}
 
-	private void processProtein(Double value, Map geneprintEntry, double proteinThreshold) {
+	private void processProtein(double value, Map geneprintEntry, double proteinThreshold) {
 		if (value > proteinThreshold) {
 			geneprintEntry.rppa = 'UPREGULATED'
 		}

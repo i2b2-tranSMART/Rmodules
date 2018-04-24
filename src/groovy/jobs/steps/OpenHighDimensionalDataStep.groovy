@@ -50,7 +50,7 @@ class OpenHighDimensionalDataStep implements Step {
 		analysisConstraints.assayConstraints.remove('patient_set').grep()
 	}
 
-	private TabularResult fetchSubset(Integer patientSetId, String ontologyTerm) {
+	private TabularResult fetchSubset(int patientSetId, String ontologyTerm) {
 
 		List<DataConstraint> dataConstraints = analysisConstraints['dataConstraints'].collect { String constraintType, values ->
 			if (values) {

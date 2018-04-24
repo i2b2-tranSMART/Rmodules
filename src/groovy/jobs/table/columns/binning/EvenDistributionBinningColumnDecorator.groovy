@@ -41,7 +41,7 @@ class EvenDistributionBinningColumnDecorator implements ColumnDecorator {
 
 		int effectiveNumberOfBins = quantileRanks.size()
 
-		(0..(effectiveNumberOfBins - 1)).each { Integer it ->
+		(0..(effectiveNumberOfBins - 1)).each { int it ->
 			Number lowerBound = it == 0 ?
 					sortedValues[0] :
 					sortedValues[quantileRanks[it - 1]]
@@ -57,7 +57,7 @@ class EvenDistributionBinningColumnDecorator implements ColumnDecorator {
 	}
 
 	private List<Number> collectAndSortValues(BackingMap backingMap, Collection<String> pks,
-	                                          Integer columnNumber, String context) {
+	                                          int columnNumber, String context) {
 		List<Number> res = Lists.newArrayListWithCapacity pks.size()
 		for (String primaryKey in pks) {
 			res << (Number) backingMap.getCell(primaryKey, columnNumber, context)

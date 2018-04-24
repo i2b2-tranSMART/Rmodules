@@ -28,6 +28,7 @@ import java.util.regex.Matcher
 class RModulesOutputRenderService implements InitializingBean {
 
 	static scope = 'request'
+	static transactional = false
 
 	def asyncJobService
 	User currentUserBean

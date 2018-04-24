@@ -208,7 +208,7 @@ class Table implements AutoCloseable {
 
 	@CompileDynamic
 	// disable @CompileStatic to have multi-dispatch
-	private void putCellToBackingMap(String pk, Integer column, value) {
+	private void putCellToBackingMap(String pk, int column, value) {
 		backingMap.putCell pk, column, value
 	}
 

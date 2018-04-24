@@ -68,7 +68,7 @@ class AnalysisFilesControllerTests {
 		}
 		principal = new AuthUserDetails(username, username,
 				true, true, true, true,
-				authorities, 1, 'userRealName')
+				authorities, 1, 'userRealName', 'user@email.com')
 	}
 
 	private void setFile(String filename) {
