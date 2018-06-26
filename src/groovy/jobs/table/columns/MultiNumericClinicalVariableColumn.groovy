@@ -38,7 +38,7 @@ class MultiNumericClinicalVariableColumn extends AbstractColumn {
 		clinicalVariables.each { ClinicalVariableColumn col, String groupName ->
 			def value = lastRow.getAt col
 			if (value != null) {
-				validateNumber col, value
+				value = validateNumber(col, value)
 				builder.put groupName, value
 			}
 		}
@@ -48,9 +48,18 @@ class MultiNumericClinicalVariableColumn extends AbstractColumn {
 		ImmutableMap.of(lastRowSaved.patient.inTrialId, builder.build()) as Map
 	}
 
-	private void validateNumber(ClinicalVariableColumn col, Object value) {
-		if (!(value instanceof Number)) {
-			throw new InvalidArgumentsException("Got non-numerical value for column $col; value was $value")
+	private Number validateNumber(ClinicalVariableColumn col, value) {
+		if (value instanceof Number) {
+			return (Number) value
 		}
+
+		if (value instanceof CharSequence) {
+			String s = value.toString().trim()
+			if (s.isNumber()) {
+				return s.toBigDecimal()
+			}
+		}
+
+		throw new InvalidArgumentsException("Got non-numerical value for column $col; value was $value")
 	}
 }
