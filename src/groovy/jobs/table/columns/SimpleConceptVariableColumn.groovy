@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableMap
 import groovy.transform.CompileStatic
 import org.transmartproject.core.dataquery.clinical.ClinicalVariableColumn
 import org.transmartproject.core.dataquery.clinical.PatientRow
-import org.transmartproject.core.exceptions.InvalidArgumentsException
 
 @CompileStatic
 class SimpleConceptVariableColumn extends AbstractColumn {
@@ -37,7 +36,7 @@ class SimpleConceptVariableColumn extends AbstractColumn {
 
 		if (cellValue != null) {
 			if (numbersOnly) {
-				validateNumber column, cellValue
+				cellValue = validateNumber(column, cellValue)
 			}
 			res = ImmutableMap.of(getPrimaryKey(lastRow), cellValue)
 		}
@@ -51,11 +50,5 @@ class SimpleConceptVariableColumn extends AbstractColumn {
 
 	protected String getPrimaryKey(PatientRow row) {
 		lastRow.patient.inTrialId
-	}
-
-	private void validateNumber(ClinicalVariableColumn col, value) {
-		if (!(value instanceof Number)) {
-			throw new InvalidArgumentsException("Got non-numerical value for column $col; value was $value")
-		}
 	}
 }

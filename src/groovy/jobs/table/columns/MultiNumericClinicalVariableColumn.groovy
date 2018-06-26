@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableMap
 import groovy.transform.CompileStatic
 import org.transmartproject.core.dataquery.clinical.ClinicalVariableColumn
 import org.transmartproject.core.dataquery.clinical.PatientRow
-import org.transmartproject.core.exceptions.InvalidArgumentsException
 
 /**
  * Column that supports an arbitrary number of numeric clinical variables
@@ -46,20 +45,5 @@ class MultiNumericClinicalVariableColumn extends AbstractColumn {
 		PatientRow lastRowSaved = lastRow
 		lastRow = null
 		ImmutableMap.of(lastRowSaved.patient.inTrialId, builder.build()) as Map
-	}
-
-	private Number validateNumber(ClinicalVariableColumn col, value) {
-		if (value instanceof Number) {
-			return (Number) value
-		}
-
-		if (value instanceof CharSequence) {
-			String s = value.toString().trim()
-			if (s.isNumber()) {
-				return s.toBigDecimal()
-			}
-		}
-
-		throw new InvalidArgumentsException("Got non-numerical value for column $col; value was $value")
 	}
 }
