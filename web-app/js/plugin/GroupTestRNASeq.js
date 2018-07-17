@@ -322,7 +322,7 @@ var RNASeqGroupTestView = Ext.extend(GenericAnalysisView, {
         if (this.inputBar.groupPanel.getNumberOfConceptCodes() < 2) {
             Ext.MessageBox.show({
                 title: 'Incorrect number of groups',
-                msg: '[Group] input field should contain than one variables. Please add more variable.',
+                msg: '[Group] input field should contain more than one variable. Please add more variables.',
                 buttons: Ext.MessageBox.OK,
                 icon: Ext.MessageBox.ERROR
             });
